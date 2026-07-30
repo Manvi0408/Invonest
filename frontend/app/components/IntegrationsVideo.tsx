@@ -62,7 +62,7 @@ export default function IntegrationsVideo() {
     >
       <video
         ref={videoRef}
-        src="/integrations/integrations.mp4"
+        src="/media/integrations.mp4"
         muted
         playsInline
         loop

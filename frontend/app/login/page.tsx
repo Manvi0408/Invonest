@@ -252,7 +252,7 @@ export default function LoginPage() {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute -inset-[7%] bg-cover bg-center"
-          style={{ backgroundImage: "url('/login-bg.jpg')" }}
+          style={{ backgroundImage: "url('/media/login-bg.jpg')" }}
           animate={{ x: mouse.x * 16, y: mouse.y * 11 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
         />

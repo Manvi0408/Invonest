@@ -165,7 +165,7 @@ export default function HeroPreview() {
       {/* ---------------- HERO (video confined to this 100vh block) ---------------- */}
       {/* h-screen (not min-h-screen) so the hero can never spill past one viewport. */}
       <section ref={heroRef} className="relative h-screen flex flex-col overflow-hidden">
-        <VideoBackground src="/hero-video.mp4" poster="/hero-poster.jpg" targetRef={heroRef} />
+        <VideoBackground src="/media/hero-video.mp4" poster="/media/hero-poster.jpg" targetRef={heroRef} />
 
         {/* NAV — logo left, links centered, Sign In right */}
         <header className="relative z-20 shrink-0 grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 md:px-14 py-5">

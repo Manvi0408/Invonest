@@ -11,7 +11,7 @@ import React from 'react';
  *
  * `fixed` + negative z-index so it never intercepts pointer events or affects
  * layout. Deliberately a flat fill: no gradient, no drifting light. The orange
- * wallpaper it replaced still lives at /bg/wallpaper-orange.jpg if it's ever
+ * wallpaper it replaced still lives at /media/wallpaper-orange.jpg if it's ever
  * wanted back.
  */
 export default function LiquidBackdrop() {

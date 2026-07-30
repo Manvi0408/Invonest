@@ -16,7 +16,7 @@ import React, { useEffect, useRef, useState } from 'react';
  *  - does not play at all under prefers-reduced-motion
  *
  * NOTE: kept by explicit request despite the input-latency cost (this is the
- * second concurrent 4K decode on the dashboard). Re-encode /rail/rail.mp4 to
+ * second concurrent 4K decode on the dashboard). Re-encode /media/rail.mp4 to
  * ~720p for a smooth version.
  */
 export default function ContentVideo() {
@@ -51,7 +51,7 @@ export default function ContentVideo() {
       {mounted && (
         <video
           ref={ref}
-          src="/rail/rail.mp4"
+          src="/media/rail.mp4"
           autoPlay
           muted
           loop

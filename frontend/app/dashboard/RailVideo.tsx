@@ -16,7 +16,7 @@ import React, { useEffect, useRef, useState } from 'react';
  * A charcoal base under it keeps the rail correct before any frame downloads.
  *
  * NOTE: kept by explicit request despite the input-latency cost. The smooth
- * alternative is a re-encoded ~720p version of /rail/rail.mp4.
+ * alternative is a re-encoded ~720p version of /media/rail.mp4.
  */
 export default function RailVideo() {
   const ref = useRef<HTMLVideoElement>(null);
@@ -48,7 +48,7 @@ export default function RailVideo() {
       {mounted && !reduced && (
         <video
           ref={ref}
-          src="/rail/rail.mp4"
+          src="/media/rail.mp4"
           autoPlay
           muted
           loop

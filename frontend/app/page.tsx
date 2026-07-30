@@ -442,7 +442,7 @@ export default function LandingPage() {
             matches the video's own letterbox rather than flashing white. */}
         <div className="absolute inset-0" style={{ background: 'radial-gradient(100% 80% at 50% 30%, #0a1119 0%, #04070b 60%, #010204 100%)' }} />
         <VideoBackground
-          src="/hero/invonest-hero-v2.mp4"
+          src="/media/invonest-hero-v2.mp4"
           targetRef={heroRef}
           objectPosition="center"
         />
@@ -675,7 +675,7 @@ export default function LandingPage() {
           className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen -z-10 overflow-hidden pointer-events-none"
         >
           <img
-            src="/bg/dunes-night.jpg"
+            src="/media/dunes-night.jpg"
             alt=""
             className="w-full h-full object-cover object-center"
           />
@@ -1212,7 +1212,7 @@ export default function LandingPage() {
           aria-hidden="true"
           className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen -z-10 overflow-hidden pointer-events-none"
         >
-          <img src="/bg/dune-cashflow.jpg" alt="" className="w-full h-full object-cover object-center" />
+          <img src="/media/dune-cashflow.jpg" alt="" className="w-full h-full object-cover object-center" />
           {/* This dune photo is near-black across most of the frame, so a light
               scrim is enough — but the left dune ridge catches highlight, so hold
               ~48% to keep the white metric cards' edges from dissolving into it. */}
@@ -1263,7 +1263,7 @@ export default function LandingPage() {
             className="relative"
           >
             <img
-              src="/automation-timeline.jpeg"
+              src="/media/automation-timeline.jpeg"
               alt="Invoice #1042 automation timeline — reminder scheduled, email sent, and a WhatsApp message with an embedded payment link."
               className="w-full h-auto rounded-2xl shadow-2xl"
             />
@@ -1428,7 +1428,7 @@ export default function LandingPage() {
           className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-screen -z-10 overflow-hidden pointer-events-none"
         >
           <video
-            src="/pricing/pricing.mp4"
+            src="/media/pricing.mp4"
             autoPlay
             muted
             loop

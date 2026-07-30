@@ -286,7 +286,7 @@ export default function AboutPage() {
           <div className="lg:col-span-6 relative flex items-center justify-center h-[460px] w-full bg-zinc-50 dark:bg-[#121214] rounded-2xl overflow-hidden border border-zinc-200/50 dark:border-zinc-800/80">
             {/* The generated finance manager background photo */}
             <img 
-              src="/stressed_finance_manager.png" 
+              src="/media/stressed_finance_manager.png" 
               alt="Stressed Finance Manager" 
               className="absolute inset-0 w-full h-full object-cover opacity-85 dark:opacity-60 mix-blend-multiply dark:mix-blend-normal"
             />
