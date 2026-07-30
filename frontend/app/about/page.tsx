@@ -126,20 +126,20 @@ export default function AboutPage() {
                   transition={{ duration: 0.12 }}
                   className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[280px] bg-white dark:bg-[#121214] border border-[#0d2227]/15 dark:border-white/10 rounded-xl shadow-2xl p-2 z-50 text-left flex flex-col gap-1"
                 >
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 text-[#0d2227] dark:text-zinc-200">
+                  <Link href="/dashboard/copilot" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 text-[#0d2227] dark:text-zinc-200">
                     <span className="w-6 h-6 rounded-md bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center font-bold text-xs text-purple-700 dark:text-purple-400">C</span>
                     <div>
                       <span className="text-[#0d2227] dark:text-zinc-100 text-xs font-bold block">AI CFO Advisor</span>
                       <span className="text-zinc-500 dark:text-zinc-400 text-[10px] block">Check hiring & payroll limits</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 text-[#0d2227] dark:text-zinc-200">
+                  </Link>
+                  <Link href="/dashboard/simulator" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 text-[#0d2227] dark:text-zinc-200">
                     <span className="w-6 h-6 rounded-md bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center font-bold text-xs text-blue-700 dark:text-blue-400">S</span>
                     <div>
                       <span className="text-[#0d2227] dark:text-zinc-100 text-xs font-bold block">Scenario Simulator</span>
                       <span className="text-zinc-500 dark:text-zinc-400 text-[10px] block">Test operational changes</span>
                     </div>
-                  </div>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>

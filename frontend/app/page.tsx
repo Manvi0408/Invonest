@@ -314,37 +314,37 @@ export default function LandingPage() {
                   transition={{ duration: 0.12 }}
                   className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[280px] bg-white border border-[#0d2227]/15 rounded-xl shadow-2xl p-2 z-50 text-left flex flex-col gap-1"
                 >
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
+                  <Link href="/dashboard/copilot" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
                     <span className="w-6 h-6 rounded-md bg-purple-100 flex items-center justify-center font-bold text-xs text-purple-700">C</span>
                     <div>
                       <span className="text-[#0d2227] text-xs font-bold block">AI CFO Advisor</span>
                       <span className="text-zinc-500 text-[10px] block">Check hiring & payroll limits</span>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
+                  </Link>
+
+                  <Link href="/dashboard/simulator" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
                     <span className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center font-bold text-xs text-blue-700">S</span>
                     <div>
                       <span className="text-[#0d2227] text-xs font-bold block">Scenario Simulator</span>
                       <span className="text-zinc-500 text-[10px] block">Test operational changes</span>
                     </div>
-                  </div>
+                  </Link>
 
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
+                  <Link href="/dashboard/clients" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
                     <span className="w-6 h-6 rounded-md bg-pink-100 flex items-center justify-center font-bold text-xs text-pink-700">H</span>
                     <div>
                       <span className="text-[#0d2227] text-xs font-bold block">Client Health Score</span>
                       <span className="text-zinc-500 text-[10px] block">Track reliability ratings</span>
                     </div>
-                  </div>
+                  </Link>
 
-                  <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
+                  <Link href="/dashboard/clients" className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#abc6d8]/10 transition-all text-[#0d2227]">
                     <span className="w-6 h-6 rounded-md bg-red-100 flex items-center justify-center font-bold text-xs text-red-700">R</span>
                     <div>
                       <span className="text-[#0d2227] text-xs font-bold block">Risk Engine</span>
                       <span className="text-zinc-500 text-[10px] block">Payment curves & credits</span>
                     </div>
-                  </div>
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>
