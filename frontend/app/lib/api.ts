@@ -9,7 +9,9 @@
  * instead of failing silently.
  */
 
-export const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Trim any trailing slash so a value like "https://api.example.com/" doesn't
+// produce a double slash ("//api/...") when combined with the request path.
+export const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
 
 const TOKEN_KEY = 'invonest_token';
 const USER_KEY = 'invonest_user';
