@@ -91,10 +91,13 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="relative bg-white dark:bg-[#09090b] text-[#0d2227] dark:text-zinc-100 selection:bg-[#abc6d8]/50 overflow-x-hidden min-h-screen transition-colors duration-300">
+    <div
+      className="relative bg-white dark:bg-black text-[#0d2227] dark:text-zinc-100 selection:bg-[#abc6d8]/50 overflow-x-hidden min-h-screen transition-colors duration-300"
+      style={{ backgroundColor: isDarkMode ? '#000000' : undefined }}
+    >
       
       {/* HEADER NAVBAR */}
-      <header className={`fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-12 flex justify-between items-center transition-all duration-300 ${isScrolled ? 'bg-white/95 dark:bg-[#09090b]/95 border-b border-[#0d2227]/10 dark:border-white/10 shadow-sm backdrop-blur' : 'bg-transparent border-b border-transparent'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-12 flex justify-between items-center transition-all duration-300 ${isScrolled ? 'bg-white/95 dark:bg-black/95 border-b border-[#0d2227]/10 dark:border-white/10 shadow-sm backdrop-blur' : 'bg-transparent border-b border-transparent'}`}>
         <Link href="/" className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#0d2227] to-[#abc6d8] flex items-center justify-center font-bold text-white shadow-lg">
             N
@@ -103,6 +106,7 @@ export default function AboutPage() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium z-40 text-[#0d2227]/80 dark:text-zinc-300">
+          <a href="/#hero" className="transition-colors hover:text-black dark:hover:text-white font-semibold">Home</a>
           <a href="/#features" className="transition-colors hover:text-black dark:hover:text-white font-semibold">Features</a>
           
           {/* Product Dropdown */}
@@ -186,15 +190,6 @@ export default function AboutPage() {
         </nav>
 
         <div className="flex items-center gap-4">
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all flex items-center justify-center text-[#0d2227] dark:text-zinc-100"
-            aria-label="Toggle Dark Mode"
-          >
-            {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
-          </button>
-
           <Link href="/dashboard" className="text-sm font-medium text-[#0d2227]/80 dark:text-zinc-300 hover:text-black dark:hover:text-white">
             Log In
           </Link>
@@ -208,7 +203,7 @@ export default function AboutPage() {
       </header>
 
       {/* SECTION 1: HERO - ABOUT INVO-NEST */}
-      <section className="relative pt-40 pb-24 px-6 md:px-12 w-full overflow-hidden bg-gradient-to-b from-[#abc6d8]/10 via-transparent to-transparent">
+      <section className="relative pt-40 pb-24 px-6 md:px-12 w-full overflow-hidden bg-gradient-to-b from-[#abc6d8]/10 dark:from-transparent via-transparent to-transparent">
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-8 text-left space-y-6">
             <span className="inline-block text-[11px] uppercase font-extrabold tracking-[0.2em] text-[#0d2227]/70 dark:text-zinc-400 font-mono">
@@ -337,7 +332,7 @@ export default function AboutPage() {
       </section>
 
       {/* SECTION 3: MISSION & VISION */}
-      <section className="bg-[#abc6d8]/10 dark:bg-[#0d2227] text-[#0d2227] dark:text-white py-20 px-6 md:px-12 w-full border-y border-[#0d2227]/10 dark:border-white/10 transition-colors duration-300">
+      <section className="bg-[#abc6d8]/10 dark:bg-black text-[#0d2227] dark:text-white py-20 px-6 md:px-12 w-full border-y border-[#0d2227]/10 dark:border-white/10 transition-colors duration-300" style={{ backgroundColor: isDarkMode ? '#000000' : undefined }}>
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-8 text-left">
             <h2 className="text-2xl md:text-4.5xl font-normal leading-[1.1] uppercase font-editorial tracking-wide text-[#0d2227] dark:text-white">
@@ -838,7 +833,7 @@ export default function AboutPage() {
       </section>
 
       {/* SECTION 9.5: OUR VISION */}
-      <section className="py-28 px-6 text-center w-full bg-[#abc6d8]/10 dark:bg-zinc-900/10 transition-colors duration-300">
+      <section className="py-28 px-6 text-center w-full bg-[#abc6d8]/10 dark:bg-black transition-colors duration-300" style={{ backgroundColor: isDarkMode ? '#000000' : undefined }}>
         <div className="max-w-4xl mx-auto space-y-4">
           <span className="inline-block text-[10px] uppercase font-extrabold tracking-[0.25em] text-[#0d2227]/60 dark:text-zinc-400 font-mono">
             OUR VISION
@@ -850,7 +845,7 @@ export default function AboutPage() {
       </section>
 
       {/* SECTION 10: BOTTOM CTA BANNER */}
-      <section className="py-24 px-6 text-center bg-[#abc6d8]/10 dark:bg-[#0d2227] relative overflow-hidden border-t border-[#0d2227]/10 dark:border-white/10 transition-colors duration-300">
+      <section className="py-24 px-6 text-center bg-[#abc6d8]/10 dark:bg-black relative overflow-hidden border-t border-[#0d2227]/10 dark:border-white/10 transition-colors duration-300" style={{ backgroundColor: isDarkMode ? '#000000' : undefined }}>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#0d2227]/5 dark:from-white/5 via-transparent to-transparent pointer-events-none" />
         <div className="max-w-3xl mx-auto relative z-10 flex flex-col items-center">
           <h2 className="text-3xl md:text-5xl font-normal text-[#0d2227] dark:text-white leading-tight mb-6 uppercase font-editorial">
@@ -873,7 +868,7 @@ export default function AboutPage() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-[#0d2227]/10 dark:border-white/10 py-12 px-6 md:px-12 text-center text-xs text-zinc-500 bg-white dark:bg-[#09090b] transition-colors duration-300">
+      <footer className="border-t border-[#0d2227]/10 dark:border-white/10 py-12 px-6 md:px-12 text-center text-xs text-zinc-500 bg-white dark:bg-black transition-colors duration-300">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-sm tracking-tight text-[#0d2227] dark:text-white">InvoNest Technologies</span>

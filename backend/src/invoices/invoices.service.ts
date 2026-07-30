@@ -2,12 +2,16 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceStatus, PaymentMethod } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
+import { RiskEngineService } from '../risk-engine/risk-engine.service';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly activity: ActivityService,
+    private readonly riskEngine: RiskEngineService,
   ) {}
 
   async createInvoice(orgId: string, data: {
@@ -87,6 +91,10 @@ export class InvoicesService {
 
   async updateStatus(id: string, status: InvoiceStatus) {
     const invoice = await this.getInvoice(id);
+    const wasPaid = invoice.status === 'PAID';
+    const nowPaid = status === 'PAID';
+    const amount = Number(invoice.amount);
+
     const timeline = (invoice.timeline as any[]) || [];
     timeline.push({
       status,
@@ -98,10 +106,48 @@ export class InvoicesService {
       where: { id },
       data: {
         status,
+        // paidAt is the source of truth for "settled"; keep it in step so the
+        // collection-speed metric and the AI ledger context stay honest.
+        paidAt: nowPaid ? invoice.paidAt ?? new Date() : wasPaid ? null : invoice.paidAt,
         timeline: timeline as any,
       },
       include: { client: true },
     });
+
+    // Delay Risk is forward-looking non-payment risk. A PAID invoice has none —
+    // leaving the pre-payment score (e.g. 84%) on screen is stale and misleading.
+    // Re-run scoring on EVERY status change, not just at creation, and force it
+    // to 0 once settled. This is the fix for the "PAID but still 84%" bug.
+    if (nowPaid && !wasPaid) {
+      await this.prisma.riskPrediction.updateMany({
+        where: { invoiceId: id },
+        data: { riskScore: 0, probabilityCurve: { d7: 100, d14: 100, d30: 100 }, confidence: 1 },
+      });
+      // Outstanding drops to zero for this invoice — reflect it on the client
+      // balance so the portfolio KPIs move too.
+      await this.prisma.client.update({
+        where: { id: invoice.clientId },
+        data: { outstandingBalance: { decrement: amount } },
+      });
+      await this.activity.record(updated.organizationId, 'PAYMENT_RECEIVED', 'System', {
+        invoiceId: id,
+        invoiceNumber: updated.invoiceNumber,
+        clientName: (invoice as any).client?.name ?? null,
+        amount,
+        via: 'status change',
+      });
+    } else if (wasPaid && !nowPaid) {
+      // Reversal/refund — the balance comes back and the risk is recomputed
+      // fresh rather than left at 0.
+      await this.prisma.client.update({
+        where: { id: invoice.clientId },
+        data: { outstandingBalance: { increment: amount } },
+      });
+      await this.riskEngine.predictInvoiceRisk(id).catch(() => undefined);
+    } else {
+      // Sent -> Overdue and the like: re-score so the number tracks reality.
+      await this.riskEngine.predictInvoiceRisk(id).catch(() => undefined);
+    }
 
     await this.notifications.createNotification(
       updated.organizationId,
@@ -168,6 +214,15 @@ export class InvoicesService {
     await this.prisma.client.update({
       where: { id: invoice.clientId },
       data: { outstandingBalance: { decrement: amount } },
+    });
+
+    await this.activity.record(invoice.organizationId, 'PAYMENT_RECEIVED', 'System', {
+      invoiceId: id,
+      invoiceNumber: invoice.invoiceNumber,
+      clientName: (invoice as any).client?.name ?? null,
+      amount,
+      method,
+      fullySettled: isFullyPaid,
     });
 
     await this.notifications.createNotification(

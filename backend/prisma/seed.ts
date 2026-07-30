@@ -27,11 +27,11 @@ async function main() {
 
   // 2. Create Default User & Organization
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash('demo123', salt);
+  const passwordHash = await bcrypt.hash('Demo@123', salt);
 
   const demoUser = await prisma.user.create({
     data: {
-      email: 'demo@invonest.com',
+      email: 'demo@invonest.ai',
       passwordHash,
       firstName: 'Sarah',
       lastName: 'Jenkins',
@@ -382,9 +382,102 @@ async function main() {
     }
   });
 
+  // 10. Cash ledger — a cash account plus four complete months of outflows and
+  // operating inflows, so Forecast Runway shows a real computed figure rather
+  // than an empty state. Four months means the 3-month window is fully covered
+  // even though the current (partial) month is excluded from the average.
+  const monthStart = (back: number) => {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth() - back, 1);
+  };
+  const dayIn = (back: number, day: number) => {
+    const m = monthStart(back);
+    return new Date(m.getFullYear(), m.getMonth(), day);
+  };
+
+  await prisma.cashAccount.create({
+    data: {
+      organizationId: demoOrg.id,
+      name: 'HDFC Current — 4471',
+      accountType: 'CURRENT',
+      currency: 'INR',
+      currentBalance: 4850000, // ₹48.5L
+      balanceAsOf: new Date(),
+      source: 'MANUAL',
+    },
+  });
+
+  // Recurring monthly outflows, repeated across the last four complete months.
+  const recurring: Array<{
+    description: string;
+    counterparty: string;
+    category: any;
+    amount: number;
+    day: number;
+  }> = [
+    { description: 'Monthly payroll', counterparty: 'Team payroll', category: 'PAYROLL', amount: 980000, day: 1 },
+    { description: 'Office rent', counterparty: 'Prestige Estates', category: 'RENT', amount: 185000, day: 5 },
+    { description: 'Cloud + SaaS tooling', counterparty: 'AWS / Vercel / Slack', category: 'SOFTWARE', amount: 142000, day: 8 },
+    { description: 'Performance marketing', counterparty: 'Google Ads', category: 'MARKETING', amount: 96000, day: 12 },
+    { description: 'Accounting retainer', counterparty: 'Sharma & Associates', category: 'PROFESSIONAL_FEES', amount: 45000, day: 15 },
+    { description: 'Utilities and internet', counterparty: 'BESCOM / ACT', category: 'UTILITIES', amount: 28000, day: 18 },
+  ];
+
+  for (let back = 1; back <= 4; back++) {
+    for (const r of recurring) {
+      await prisma.transaction.create({
+        data: {
+          organizationId: demoOrg.id,
+          direction: 'OUTFLOW',
+          amount: r.amount,
+          currency: 'INR',
+          category: r.category,
+          description: r.description,
+          counterparty: r.counterparty,
+          occurredAt: dayIn(back, r.day),
+          isRecurring: true,
+          source: 'MANUAL',
+        },
+      });
+    }
+
+    // Operating inflow — collections actually landing in the bank. Recorded
+    // independently of the AR ledger on purpose: invoices never auto-create
+    // these, so the two ledgers stay separate sources of truth.
+    await prisma.transaction.create({
+      data: {
+        organizationId: demoOrg.id,
+        direction: 'INFLOW',
+        amount: 610000 + back * 20000,
+        currency: 'INR',
+        description: 'Client collections settled',
+        counterparty: 'Various clients',
+        occurredAt: dayIn(back, 22),
+        source: 'MANUAL',
+      },
+    });
+  }
+
+  // A one-off capital purchase, flagged out of burn so it doesn't distort the
+  // trailing average — exactly the case excludedFromBurn exists for.
+  await prisma.transaction.create({
+    data: {
+      organizationId: demoOrg.id,
+      direction: 'OUTFLOW',
+      amount: 420000,
+      currency: 'INR',
+      category: 'EQUIPMENT',
+      description: 'Laptop refresh (one-off)',
+      counterparty: 'Apple India',
+      occurredAt: dayIn(2, 14),
+      excludedFromBurn: true,
+      source: 'MANUAL',
+    },
+  });
+
   console.log('Database Seeding Successful! Demo Account credentials:');
-  console.log('Email: demo@invonest.com');
-  console.log('Password: demo123');
+  console.log('Email: demo@invonest.ai');
+  console.log('Password: Demo@123');
 }
 
 main()

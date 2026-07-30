@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, Clock, Zap, Check, ArrowRight, Briefcase, Calendar, ChevronLeft } from 'lucide-react';
 
@@ -103,10 +104,16 @@ export default function BookDemoModal({ isOpen, onClose, initialEmail = '', onSu
   };
 
   if (!isOpen) return null;
+  // Render into <body> via a portal. A transformed / perspective ancestor on the
+  // landing page (the 3D scroll-reveal wrappers) would otherwise trap this
+  // `fixed` overlay in that ancestor's containing block — so it'd render at the
+  // TOP of the page instead of the viewport, and a click near the footer would
+  // "open nothing" on screen. The portal escapes that and pins it to the viewport.
+  if (typeof document === 'undefined') return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 overflow-y-auto">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 md:p-10 overflow-y-auto">
         
         {/* BACKDROP */}
         <motion.div
@@ -462,6 +469,7 @@ export default function BookDemoModal({ isOpen, onClose, initialEmail = '', onSu
 
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

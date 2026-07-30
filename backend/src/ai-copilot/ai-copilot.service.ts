@@ -1,127 +1,183 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RiskEngineService } from '../risk-engine/risk-engine.service';
 import { ForecastingService } from '../forecasting/forecasting.service';
+import { BurnRateService } from '../forecasting/burn-rate.service';
+import { GeminiService } from './gemini.service';
 
 @Injectable()
 export class AiCopilotService {
+  private readonly logger = new Logger(AiCopilotService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly riskEngine: RiskEngineService,
     private readonly forecasting: ForecastingService,
+    private readonly burnRate: BurnRateService,
+    private readonly llm: GeminiService,
   ) {}
 
+  /**
+   * The AI CFO Copilot.
+   *
+   * Every question - including "hi" - goes to the LLM with a system prompt that
+   * defines the role and embeds the org's live ledger. There are no keyword
+   * branches and no canned replies: the previous implementation matched on
+   * substrings and fell through to a fixed welcome blurb that also claimed a
+   * QuickBooks/Stripe connection this product does not have.
+   */
   async askCopilot(orgId: string, userId: string, query: string) {
     const today = new Date();
-    
-    // Fetch critical business parameters to contextualize AI responses
-    const forecast = await this.forecasting.getForecast(orgId, 30);
-    const heatmap = await this.riskEngine.getRevenueRiskHeatmap(orgId);
 
-    const cash = forecast.predictedCashPosition;
-    const riskAmt = forecast.atRiskRevenue;
-    const collections = forecast.expectedCollections;
-
-    let responseText = '';
-    let category = 'GENERAL';
-
-    const normalizedQuery = query.toLowerCase();
-
-    // 1. AI CFO - Afford to hire check
-    if (normalizedQuery.includes('hire') || normalizedQuery.includes('afford')) {
-      category = 'AI_CFO';
-      const newSalaryCost = 120000; // Average monthly hire cost
-      const runwayMonths = Math.round(cash / (newSalaryCost + 300000)); // Run-rate of 3L
-
-      if (cash > 500000 && riskAmt < cash * 0.4) {
-        responseText = `### 💼 AI CFO Hire Assessment: **APPROVED**\n\nYes, your cash flow forecast indicates you can afford to hire. \n\n* **Current Liquidity:** ₹${cash.toLocaleString()}\n* **Projected Runway:** ~${runwayMonths} months (including estimated headcount overhead).\n* **Risk Exposure:** At-risk accounts receivable is ₹${riskAmt.toLocaleString()} (${Math.round((riskAmt/cash)*100)}% of liquidity), which is within safe operating parameters.`;
-      } else {
-        responseText = `### ⚠️ AI CFO Hire Assessment: **CAUTION**\n\nI recommend delaying headcount increases for 45 days. \n\n* **Current Liquidity:** ₹${cash.toLocaleString()}\n* **Outstanding Exposure:** ₹${riskAmt.toLocaleString()} is currently tied up in overdue invoices.\n* **Action plan:** If we recover ₹${Math.round(riskAmt * 0.4).toLocaleString()} of the overdue capital, we can safely open the role.`;
-      }
-    }
-    // 2. AI CFO - Payroll Cash limits
-    else if (normalizedQuery.includes('payroll') || normalizedQuery.includes('enough cash')) {
-      category = 'AI_CFO';
-      const estPayroll = 450000; // Estimated payroll liability
-      const cashSurplus = cash - estPayroll;
-
-      if (cashSurplus > 0) {
-        responseText = `### 🏦 Payroll Solvency Analysis\n\nYou have **sufficient reserves** to cover the upcoming payroll of ₹${estPayroll.toLocaleString()}.\n\n* **Liquidity Buffer:** ₹${cashSurplus.toLocaleString()} surplus remaining after disbursements.\n* **Expected Inflows:** ₹${collections.toLocaleString()} is scheduled to settle before month-end.`;
-      } else {
-        responseText = `### 🚨 Critical Payroll Alert\n\nYour current cash position (₹${cash.toLocaleString()}) is below payroll requirements (₹${estPayroll.toLocaleString()}).\n\n* **Deficit:** -₹${Math.abs(cashSurplus).toLocaleString()}\n* **Immediate Action:** We have ₹${riskAmt.toLocaleString()} at-risk. Trigger the **Smart Collections Agent** to expedite reminders for critical accounts.`;
-      }
-    }
-    // 3. AI CFO - Customers threatening cash flow
-    else if (normalizedQuery.includes('threaten') || normalizedQuery.includes('risk') || normalizedQuery.includes('late')) {
-      category = 'AI_CFO';
-      const criticalClients = heatmap.filter(c => c.riskLevel === 'CRITICAL' || c.riskScore > 65);
-
-      if (criticalClients.length > 0) {
-        const clientList = criticalClients.map(c => `* **${c.name}** (Exposure: ₹${c.exposure.toLocaleString()}, Risk Score: ${c.riskScore})`).join('\n');
-        responseText = `### 🔍 Accounts Receivable Risk Report\n\nThe following clients present the highest cash flow risk due to delayed payments:\n\n${clientList}\n\n* **Impact Mitigation:** I recommend sending payment links and offering dynamic settlement terms (e.g. 2/10 Net 30) immediately.`;
-      } else {
-        responseText = `### 🛡️ Accounts Receivable Risk Report\n\nGreat news! Accounts receivable is healthy. No individual client accounts currently pose critical threats to liquidity.`;
-      }
-    }
-    // 4. Financial Digital Twin - Simulation queries
-    else if (normalizedQuery.includes('drop') || normalizedQuery.includes('default') || normalizedQuery.includes('what if') || normalizedQuery.includes('payroll increases')) {
-      category = 'DIGITAL_TWIN';
-      
-      let type = 'SALES_DROP';
-      let factor = 15;
-      let targetClient = '';
-
-      if (normalizedQuery.includes('default')) {
-        type = 'CLIENT_DEFAULT';
-        targetClient = heatmap[0]?.name || 'XYZ Corp';
-      } else if (normalizedQuery.includes('payroll')) {
-        type = 'PAYROLL_INCREASE';
-        factor = 80000;
-      }
-
-      const sim = await this.forecasting.runScenarioSimulation(orgId, type, targetClient, factor, factor);
-      responseText = `### 🤖 Financial Digital Twin Simulation\n\nI have modeled this hypothesis in the organization's virtual cash twin:\n\n* **Baseline Cash:** ₹${originalCashFormat(sim.originalCash)}\n* **Simulated Cash:** ₹${originalCashFormat(sim.simulatedCash)}\n* **Liquidity Delta:** **₹${sim.impactAmount.toLocaleString()}**\n\n**AI Impact Narrative:** ${sim.explanation}`;
-    }
-    // 5. Default General Assist
-    else {
-      responseText = `### 👋 Welcome to InvoNest Copilot\n\nI am connected to your live QuickBooks ledger, Stripe billing feed, and accounts receivable pipeline.\n\n* Try asking me:\n  * *"Will we have enough cash for payroll?"*\n  * *"Can we afford to hire two software designers?"*\n  * *"Which customers are threatening our cash flow?"*\n  * *"What if our primary client defaults?"* (Digital Twin simulation)`;
-    }
-
-    // Append to or create conversational history in Database
+    // Prior turns, so follow-ups resolve against real context.
     let conversation = await this.prisma.aiConversation.findFirst({
       where: { organizationId: orgId, userId },
       orderBy: { updatedAt: 'desc' },
     });
+    const messages = conversation ? ((conversation.messages as any[]) ?? []) : [];
+    const history = messages
+      .filter((m) => m?.role === 'user' || m?.role === 'assistant')
+      .map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content ?? '') }))
+      .filter((m) => m.content.length > 0);
 
-    const messages = conversation ? (conversation.messages as any[]) : [];
+    let responseText: string;
+
+    if (!this.llm.isConfigured) {
+      // Deliberately not a fabricated answer - a missing key is an operator
+      // problem and should read as one.
+      responseText =
+        'The AI Copilot is not configured on this server: GEMINI_API_KEY is missing. Add it to the backend environment and restart.';
+    } else {
+      const system = await this.buildSystemPrompt(orgId, today);
+      try {
+        responseText = await this.llm.complete(system, history, query);
+      } catch (err: any) {
+        this.logger.error(`LLM call failed: ${err?.message}`);
+        // Surface the real reason. GeminiService translates the operator-fixable
+        // API errors into plain sentences; anything else stays generic.
+        responseText =
+          err?.message && !/^\d{3}\s/.test(err.message)
+            ? err.message
+            : 'I could not reach the AI service just now. Your data is fine - try again in a moment.';
+      }
+    }
+
     messages.push({ role: 'user', content: query, timestamp: today.toISOString() });
-    messages.push({ role: 'assistant', content: responseText, category, timestamp: new Date().toISOString() });
+    messages.push({
+      role: 'assistant',
+      content: responseText,
+      timestamp: new Date().toISOString(),
+    });
 
     if (conversation) {
       conversation = await this.prisma.aiConversation.update({
         where: { id: conversation.id },
-        data: {
-          messages: messages as any,
-          updatedAt: today,
-        },
+        data: { messages: messages as any, updatedAt: today },
       });
     } else {
       conversation = await this.prisma.aiConversation.create({
         data: {
           organizationId: orgId,
           userId,
-          title: query.substring(0, 40) + '...',
+          title: query.substring(0, 40) + (query.length > 40 ? '...' : ''),
           messages: messages as any,
         },
       });
     }
 
-    return {
-      query,
-      answer: responseText,
-      category,
-      history: messages,
-    };
+    return { query, answer: responseText, category: 'GENERAL', history: messages };
+  }
+
+  /**
+   * Role definition plus a snapshot of the org's actual numbers, rebuilt on
+   * every call so the model never answers from stale figures. Everything here
+   * is read live from this org's rows - nothing is cross-tenant.
+   */
+  private async buildSystemPrompt(orgId: string, today: Date): Promise<string> {
+    const [org, forecast, heatmap, invoices, clients, runway] = await Promise.all([
+      this.prisma.organization.findUnique({ where: { id: orgId } }),
+      this.forecasting.getForecast(orgId, 30).catch(() => null),
+      this.riskEngine.getRevenueRiskHeatmap(orgId).catch(() => null),
+      this.prisma.invoice.findMany({
+        where: { organizationId: orgId },
+        include: { client: true },
+        orderBy: { dueDate: 'asc' },
+        take: 40,
+      }),
+      this.prisma.client.findMany({
+        where: { organizationId: orgId },
+        include: { riskProfile: true },
+      }),
+      this.burnRate.getRunway(orgId).catch(() => null),
+    ]);
+
+    const money = (n: number) => `Rs ${Math.round(n).toLocaleString('en-IN')}`;
+    const daysOverdue = (d: Date) =>
+      Math.floor((today.getTime() - new Date(d).getTime()) / 86400000);
+
+    const outstanding = invoices.filter((i) => i.status !== 'PAID');
+    const outstandingTotal = outstanding.reduce((s, i) => s + Number(i.amount), 0);
+    const overdue = outstanding.filter((i) => daysOverdue(i.dueDate) > 0);
+    const overdueTotal = overdue.reduce((s, i) => s + Number(i.amount), 0);
+
+    const invoiceLines = outstanding
+      .slice(0, 25)
+      .map((i) => {
+        const d = daysOverdue(i.dueDate);
+        const due = i.dueDate.toISOString().split('T')[0];
+        const late = d > 0 ? ` (${d}d overdue)` : '';
+        return `- ${i.invoiceNumber} | ${i.client?.name ?? 'Unknown'} | ${money(Number(i.amount))} | ${i.status} | due ${due}${late}`;
+      })
+      .join('\n');
+
+    const clientLines = clients
+      .map((c) => {
+        const r = c.riskProfile;
+        const risk = r
+          ? ` | risk ${r.riskScore}/100 (${r.riskLevel}) | reliability ${r.paymentReliability}%`
+          : ' | no risk profile yet';
+        return `- ${c.name} | outstanding ${money(Number(c.outstandingBalance))}${risk}`;
+      })
+      .join('\n');
+
+    const runwayLine = runway
+      ? runway.runwayMonths != null
+        ? `${runway.runwayMonths} months (net burn ${money(runway.netBurn ?? 0)}/mo, cash ${money(runway.cashPosition ?? 0)}, ${runway.windowMonths}-month average)`
+        : `not available - ${runway.unavailableReason}`
+      : 'not available';
+
+    return [
+      'You are the AI CFO Copilot inside InvoNest, an accounts-receivable and cash-flow platform.',
+      'You advise the business owner on their receivables, collections, client risk and cash position.',
+      '',
+      '## How to behave',
+      '- Answer anything the user asks, including greetings and small talk. Be warm and brief for those; do not lecture or list your features unprompted.',
+      '- When the question is about their finances, ground every figure in the LIVE DATA below. Quote real invoice numbers, client names and amounts.',
+      '- If the data below cannot answer the question, say so plainly. Never invent a number, a client, or an invoice.',
+      '- Be concise. Lead with the answer, then the supporting detail. Use markdown sparingly - short paragraphs and the occasional list, not a wall of headers.',
+      '- Amounts are Indian rupees. Write them with the rupee symbol and Indian digit grouping.',
+      '- You are not a licensed financial advisor. You can analyse this ledger and suggest collection actions, but do not give personalised investment advice.',
+      '',
+      '## LIVE DATA',
+      `Today: ${today.toISOString().split('T')[0]}`,
+      `Organization: ${org?.name ?? 'Unknown'} (plan: ${org?.plan ?? 'FREE'})`,
+      '',
+      `Outstanding receivables: ${money(outstandingTotal)} across ${outstanding.length} invoice(s)`,
+      `Overdue: ${money(overdueTotal)} across ${overdue.length} invoice(s)`,
+      forecast
+        ? `Predicted cash position (30d): ${money(forecast.predictedCashPosition)} | expected collections: ${money(forecast.expectedCollections)} | at-risk revenue: ${money(forecast.atRiskRevenue)}`
+        : 'Forecast: unavailable',
+      `Forecast runway: ${runwayLine}`,
+      heatmap ? `Risk heatmap: ${JSON.stringify(heatmap).slice(0, 600)}` : '',
+      '',
+      `### Clients (${clients.length})`,
+      clientLines || '(none)',
+      '',
+      `### Outstanding invoices (showing ${Math.min(outstanding.length, 25)} of ${outstanding.length})`,
+      invoiceLines || '(none)',
+    ]
+      .filter(Boolean)
+      .join('\n');
   }
 
   async getFinancialNarrative(orgId: string) {

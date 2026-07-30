@@ -4,6 +4,13 @@ import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class RiskEngineService {
+  /**
+   * Paid invoices required before a reliability score is reported at all.
+   * Below this, one unusually early or late payment swings the number to an
+   * extreme, so it is withheld rather than shown.
+   */
+  static readonly MIN_PAID_INVOICES_FOR_RELIABILITY = 3;
+
   constructor(private readonly prisma: PrismaService) {}
 
   async calculateClientHealthScore(clientId: string) {
@@ -20,7 +27,16 @@ export class RiskEngineService {
     const paidInvoices = invoices.filter((inv) => inv.status === 'PAID');
     const overdueInvoices = invoices.filter((inv) => inv.status === 'OVERDUE');
 
-    // 1. Payment Reliability Score (Base 100, drops by late days)
+    // 1. Payment Reliability Score.
+    //
+    // A brand-new client used to score a perfect 100 here purely because the
+    // `if` below never ran - a confident-looking number backed by no evidence.
+    // Below MIN_PAID_INVOICES_FOR_RELIABILITY the score is not trustworthy, so
+    // `hasSufficientHistory` is false and callers render "Insufficient history"
+    // instead of the placeholder value.
+    const hasSufficientHistory =
+      paidInvoices.length >= RiskEngineService.MIN_PAID_INVOICES_FOR_RELIABILITY;
+
     let paymentReliability = 100;
     if (paidInvoices.length > 0) {
       let totalDelayDays = 0;
@@ -49,8 +65,11 @@ export class RiskEngineService {
     );
 
     if (orgTotalInvoiced._sum.amount && Number(orgTotalInvoiced._sum.amount) > 0) {
+      // True share of invoiced revenue. This was previously multiplied by 5,
+      // so any client above 20% of revenue pegged at 100 - a display scaling
+      // factor being fed into a weighted average as if it were a percentage.
       const percentage = (clientTotalInvoiced / Number(orgTotalInvoiced._sum.amount)) * 100;
-      revenueContribution = Math.min(100, Math.round(percentage * 5)); // Scaled
+      revenueContribution = Math.min(100, Math.round(percentage));
     }
 
     // 3. Outstanding Debt Index (100 is excellent/none, penalize high balances)
@@ -67,6 +86,12 @@ export class RiskEngineService {
 
     // Calculate Combined Health Score (Weighted)
     // 50% reliability, 30% debt management, 20% revenue contribution
+    //
+    // NOTE: revenueContribution is a POSITIVE input here, so a client who is a
+    // large share of revenue scores healthier for being large. For credit risk
+    // that is arguably backwards - concentration is exposure, not virtue.
+    // Left as-is deliberately: inverting it would move every existing score,
+    // and that is a modelling decision to make on purpose, not in passing.
     const healthScore = Math.round(
       paymentReliability * 0.5 +
         outstandingDebtScore * 0.3 +
@@ -112,6 +137,8 @@ export class RiskEngineService {
         averageDelayDays,
         outstandingDebt: outstandingDebtVal,
         paymentReliability,
+        paidInvoiceCount: paidInvoices.length,
+        hasSufficientHistory,
         revenueContribution,
         creditworthinessLimit,
         creditScoreConfidence,
@@ -124,6 +151,8 @@ export class RiskEngineService {
         averageDelayDays,
         outstandingDebt: outstandingDebtVal,
         paymentReliability,
+        paidInvoiceCount: paidInvoices.length,
+        hasSufficientHistory,
         revenueContribution,
         creditworthinessLimit,
         creditScoreConfidence,
@@ -136,7 +165,11 @@ export class RiskEngineService {
       clientName: client.name,
       healthScore,
       riskLevel,
-      paymentReliability,
+      // null, not a placeholder - the caller must decide how to render "unknown"
+      // rather than being handed a number that looks earned.
+      paymentReliability: hasSufficientHistory ? paymentReliability : null,
+      hasSufficientHistory,
+      paidInvoiceCount: paidInvoices.length,
       revenueContribution,
       outstandingDebtScore,
       averageDelayDays,

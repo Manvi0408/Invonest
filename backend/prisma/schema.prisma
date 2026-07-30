@@ -29,6 +29,18 @@ enum PaymentMethod {
   BANK_TRANSFER
 }
 
+enum Plan {
+  FREE
+  PREMIUM
+  ENTERPRISE
+}
+
+enum CreditTxType {
+  MONTHLY_GRANT
+  TOPUP_PURCHASE
+  USAGE
+}
+
 enum ReminderChannel {
   EMAIL
   SMS
@@ -52,6 +64,29 @@ model Organization {
   id                String              @id @default(uuid())
   name              String
   slug              String              @unique
+  plan              Plan                @default(FREE)
+
+  // ---- Usage counters (all reset together on the monthly cycle) ----
+  invoiceUploadCount Int      @default(0)
+  chatbotCreditsUsed Int      @default(0)
+  quotaResetAt       DateTime @default(now())
+
+  // Purchased top-up credits. Deliberately NOT reset monthly — they carry over,
+  // unlike the monthly grant. Materialized running balance; CreditTransaction is
+  // the audit trail that backs it.
+  topupCreditBalance Int      @default(0)
+
+  // ---- Per-org overrides. NULL = inherit the plan default from PLAN_LIMITS. ----
+  invoiceUploadLimit Int?
+  teamSeatLimit      Int?
+  dataRetentionDays  Int?
+  chatbotCreditLimit Int?
+
+  // ---- Subscription billing ----
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  planStatus           String? // active | past_due | canceled
+
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   memberships       Membership[]
@@ -62,6 +97,33 @@ model Organization {
   auditLogs         AuditLog[]
   reports           Report[]
   aiConversations   AiConversation[]
+  creditTransactions CreditTransaction[]
+  transactions      Transaction[]
+  cashAccounts      CashAccount[]
+  activityLogs      ActivityLog[]
+
+  // ---- Branding for the public payment portal (5d) ----
+  // The paying customer sees the vendor's identity, not InvoNest's.
+  logoUrl           String?
+  brandColor        String?  @default("#0d2227")
+  supportEmail      String?
+
+  // ---- Cash-crunch alerting (5c) ----
+  runwayAlertMonths Float    @default(2)
+  runwayAlertedAt   DateTime?  // de-dupe: don't re-alert every tick
+}
+
+model CreditTransaction {
+  id             String       @id @default(uuid())
+  organizationId String
+  type           CreditTxType
+  amount         Int // positive: grant/top-up. negative: usage.
+  balanceAfter   Int // grant remaining + top-up balance, at the time of writing
+  description    String?
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
 }
 
 model User {
@@ -98,7 +160,12 @@ model Client {
   email              String
   phone              String?
   companyName        String?
+  industry           String?
+  creditLimit        Decimal?           @db.Decimal(15, 2)
   outstandingBalance Decimal            @default(0.0) @db.Decimal(15, 2)
+  // Soft delete. Historical invoices and activity rows keep pointing at this
+  // row, so a hard delete would orphan them (or cascade them away entirely).
+  archivedAt         DateTime?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -114,7 +181,12 @@ model ClientRiskProfile {
   averageDelayDays       Float     @default(0.0)
   historicalBehavior     String?
   outstandingDebt        Decimal   @default(0.0) @db.Decimal(15, 2)
-  paymentReliability     Int       @default(100) // 0-100
+  // 0-100. Only meaningful when hasSufficientHistory is true; below the
+  // threshold the API returns null and the UI shows "Insufficient history"
+  // rather than an unearned 100.
+  paymentReliability     Int       @default(100)
+  paidInvoiceCount       Int       @default(0)
+  hasSufficientHistory   Boolean   @default(false)
   revenueContribution    Int       @default(0) // 0-100
   creditworthinessLimit  Decimal   @default(0.0) @db.Decimal(15, 2)
   creditScoreConfidence  Float     @default(0.0)
@@ -148,6 +220,10 @@ model Invoice {
   paymentLinks   PaymentLink[]
   reminders      Reminder[]
   riskPrediction RiskPrediction?
+  // Reconciliation link only. Paid invoices deliberately do NOT auto-create
+  // inflow rows — that would double-count against a bank feed once sync lands,
+  // and keeps the AR ledger and the cash ledger honestly separate.
+  transactions   Transaction[]
 
   @@unique([organizationId, invoiceNumber])
 }
@@ -286,4 +362,380 @@ model AiConversation {
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Cash-out ledger. The rest of the schema models receivables only — money
+// coming in — which makes burn rate, and therefore runway, underivable.
+// These two models supply the missing direction.
+// See docs/specs/transaction-expense-model.md
+// ---------------------------------------------------------------------------
+
+model Transaction {
+  id             String                @id @default(uuid())
+  organizationId String
+
+  direction      TransactionDirection
+  // Always positive. Signed amounts invite double-negation bugs the first time
+  // someone writes SUM(amount) without filtering on direction.
+  amount         Decimal               @db.Decimal(15, 2)
+  currency       String                @default("INR")
+
+  category       ExpenseCategory?
+  description    String
+  counterparty   String?
+
+  // Value date, deliberately distinct from createdAt: a CSV imported in August
+  // holding June rows must count towards June's burn, not August's.
+  occurredAt     DateTime
+  source         TransactionSource     @default(MANUAL)
+  externalId     String?
+
+  // Recurring outflows are the backbone of a stable burn rate — entering
+  // payroll once yields a usable number without months of history.
+  isRecurring    Boolean               @default(false)
+  recurrenceRule String?
+
+  // Drops a row out of burn without deleting it: one-off equipment, or an
+  // intra-account transfer that would otherwise distort the average.
+  excludedFromBurn Boolean             @default(false)
+
+  invoiceId      String?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invoice        Invoice?              @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+
+  // Makes re-syncing idempotent. A duplicated payroll row silently halves
+  // reported runway, so this is the most load-bearing constraint here.
+  @@unique([organizationId, source, externalId])
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, direction, occurredAt])
+}
+
+model CashAccount {
+  id             String           @id @default(uuid())
+  organizationId String
+
+  name           String
+  accountType    CashAccountType  @default(CURRENT)
+  currency       String           @default("INR")
+
+  // Observed balance plus the moment it was true. Runway rolls this forward
+  // over later transactions rather than trusting a stale figure.
+  currentBalance Decimal          @db.Decimal(15, 2)
+  balanceAsOf    DateTime
+
+  isActive       Boolean          @default(true)
+  source         TransactionSource @default(MANUAL)
+  externalId     String?
+
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, source, externalId])
+  @@index([organizationId, isActive])
+}
+
+enum TransactionDirection {
+  INFLOW
+  OUTFLOW
+}
+
+enum TransactionSource {
+  MANUAL
+  CSV_IMPORT
+  BANK_FEED
+  ACCOUNTING_SYNC
+}
+
+enum ExpenseCategory {
+  PAYROLL
+  RENT
+  SOFTWARE
+  MARKETING
+  PROFESSIONAL_FEES
+  TAXES
+  UTILITIES
+  INVENTORY
+  TRAVEL
+  EQUIPMENT
+  OTHER
+}
+
+enum CashAccountType {
+  CURRENT
+  SAVINGS
+  CREDIT_LINE
+  ESCROW
+}
+
+// ---------------------------------------------------------------------------
+// Append-only audit stream powering the Overview activity feed. Deliberately
+// denormalised: `actor` and `metadata` capture what was true at write time, so
+// a later rename or delete doesn't rewrite history.
+// ---------------------------------------------------------------------------
+
+model ActivityLog {
+  id             String            @id @default(uuid())
+  organizationId String
+  eventType      ActivityEventType
+  // Display name of whoever caused it — a user, or "System" for automated
+  // events. Stored flat rather than as a FK so deleting a user doesn't cascade
+  // away the audit trail.
+  actor          String
+  // Event-shaped payload: invoiceNumber, clientName, amount, channel, etc.
+  metadata       Json?
+  createdAt      DateTime          @default(now())
+
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  // The feed only ever reads "latest N for this org".
+  @@index([organizationId, createdAt])
+}
+
+// Values match the schema convention used by every other enum here
+// (UPPER_SNAKE); the API serialises them unchanged.
+enum ActivityEventType {
+  REMINDER_SENT
+  INVOICE_OVERDUE
+  PAYMENT_RECEIVED
+  CLIENT_ADDED
+  CLIENT_REMOVED
+  INVOICE_UPLOADED
+  PROMISE_TO_PAY_LOGGED
+}
+
+// ============================================================================
+// INTEGRATIONS PLATFORM (Phase 1)
+// Self-contained. `organizationId` is a scalar (no FK relation) to keep the
+// existing models untouched. All secret material is stored ENCRYPTED
+// (AES-256-GCM) in OAuthToken / Integration.apiKeyEnc — never in plaintext.
+// ============================================================================
+
+enum ProviderKey {
+  QUICKBOOKS
+  XERO
+  ZOHO_BOOKS
+  SALESFORCE
+  STRIPE
+  RAZORPAY
+  GMAIL
+  WHATSAPP
+}
+
+enum IntegrationStatus {
+  NOT_CONNECTED
+  CONNECTING
+  AUTHORIZING
+  CONNECTED
+  SYNCING
+  SYNC_FAILED
+  DISCONNECTED
+}
+
+enum SyncJobKind {
+  INITIAL_IMPORT
+  INCREMENTAL
+  SCHEDULED
+  WEBHOOK
+  RETRY
+  TOKEN_REFRESH
+}
+
+enum SyncJobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum SyncLogLevel {
+  INFO
+  WARN
+  ERROR
+}
+
+model Integration {
+  id             String            @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  status         IntegrationStatus @default(NOT_CONNECTED)
+  // For API-key providers (Stripe/Razorpay) the key is stored encrypted here.
+  apiKeyEnc      String?
+  scopes         String[]          @default([])
+  lastSyncedAt   DateTime?
+  nextSyncAt     DateTime?
+  syncIntervalMin Int              @default(60)
+  error          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  oauthToken OAuthToken?
+  accounts   ConnectedAccount[]
+  jobs       SyncJob[]
+  logs       SyncLog[]
+
+  @@unique([organizationId, provider])
+  @@index([organizationId])
+}
+
+model OAuthToken {
+  id             String    @id @default(uuid())
+  integrationId  String    @unique
+  accessTokenEnc String
+  refreshTokenEnc String?
+  tokenType      String?
+  scope          String?
+  expiresAt      DateTime?
+  // Provider-specific ids (e.g. QuickBooks realmId, WhatsApp phone_number_id).
+  realmId        String?
+  meta           Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+}
+
+model ConnectedAccount {
+  id            String   @id @default(uuid())
+  integrationId String
+  externalId    String
+  displayName   String?
+  email         String?
+  meta          Json?
+  createdAt     DateTime @default(now())
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+}
+
+model SyncJob {
+  id            String        @id @default(uuid())
+  integrationId String
+  kind          SyncJobKind
+  status        SyncJobStatus @default(QUEUED)
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  recordsSynced Int           @default(0)
+  attempts      Int           @default(0)
+  error         String?
+  createdAt     DateTime      @default(now())
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId, status])
+}
+
+model SyncLog {
+  id            String       @id @default(uuid())
+  integrationId String
+  level         SyncLogLevel @default(INFO)
+  message       String
+  meta          Json?
+  createdAt     DateTime     @default(now())
+
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId, createdAt])
+}
+
+model WebhookEvent {
+  id            String      @id @default(uuid())
+  provider      ProviderKey
+  externalId    String
+  eventType     String?
+  signatureValid Boolean    @default(false)
+  payload       Json
+  processedAt   DateTime?
+  createdAt     DateTime    @default(now())
+
+  // Idempotency: the same provider event is only ever processed once.
+  @@unique([provider, externalId])
+  @@index([provider, processedAt])
+}
+
+// --- Synced business data (namespaced to avoid clashing with core models) ---
+
+model SyncedCustomer {
+  id             String      @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  externalId     String
+  name           String?
+  email          String?
+  meta           Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([organizationId, provider])
+}
+
+model SyncedInvoice {
+  id             String      @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  externalId     String
+  number         String?
+  amount         Decimal?    @db.Decimal(14, 2)
+  currency       String?
+  status         String?
+  dueDate        DateTime?
+  meta           Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([organizationId, provider])
+}
+
+model SyncedPayment {
+  id             String      @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  externalId     String
+  amount         Decimal?    @db.Decimal(14, 2)
+  currency       String?
+  status         String?
+  meta           Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([organizationId, provider])
+}
+
+model SyncedContact {
+  id             String      @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  externalId     String
+  name           String?
+  email          String?
+  meta           Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([organizationId, provider])
+}
+
+model Conversation {
+  id             String      @id @default(uuid())
+  organizationId String
+  provider       ProviderKey
+  externalId     String
+  channel        String?
+  subject        String?
+  status         String?
+  meta           Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([organizationId, provider])
 }

@@ -1,495 +1,180 @@
-# InvoNest ⚡
+<div align="center">
 
-**InvoNest** is an AI-powered Accounts Receivable (A/R) lifecycle platform built to help finance teams automate invoice collections, monitor customer payment behavior, predict cash flow risks, and improve working capital. The platform combines OCR-powered invoice digitization, AI-driven risk scoring, financial forecasting, and automated reminder workflows into a single intelligent finance workspace.
+# 💸 InvoNest
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)
-![NestJS](https://img.shields.io/badge/NestJS-11-E0234E.svg)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791.svg)
-![Prisma](https://img.shields.io/badge/Prisma-ORM-2D3748.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+### AI Cash-Flow Intelligence & Invoice Recovery for modern finance teams
 
----
+**Predict who pays late. Chase invoices automatically. Always know your runway.**
 
-## 📑 Table of Contents
+<br/>
 
-- [Overview](#overview)
-- [Problem Statement](#problem-statement)
-- [Solution](#solution)
-- [Screenshots](#-screenshots)
-- [Key Features](#-key-features)
-- [System Architecture](#-system-architecture)
-- [Technology Stack](#-technology-stack)
-- [Application Workflow](#-application-workflow)
-- [API Endpoints](#-api-endpoints)
-- [Project Structure](#-project-structure)
-- [Installation](#-installation)
-- [Deployment](#-deployment)
-- [Future Enhancements](#-future-enhancements)
-- [License](#-license)
+![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![NestJS](https://img.shields.io/badge/NestJS-10-E0234E?logo=nestjs&logoColor=white)
+![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma&logoColor=white)
+![Tailwind](https://img.shields.io/badge/TailwindCSS-3-06B6D4?logo=tailwindcss&logoColor=white)
+
+</div>
 
 ---
 
-# Overview
+## 🧭 What is InvoNest?
 
-Managing outstanding invoices is one of the biggest operational challenges for finance teams. Businesses often struggle with delayed customer payments, fragmented invoice records, manual reminder processes, and poor cash flow visibility.
+InvoNest is an **AI-powered accounts-receivable platform**. It connects to your accounting, CRM, payment and communication tools, learns how each customer pays, and then does the boring, high-stakes work for you: **flagging invoices that are about to go late, running the follow-up sequence, embedding a payment link in every message, and forecasting your cash runway in real time.**
 
-InvoNest centralizes the complete Accounts Receivable lifecycle into a unified dashboard where finance teams can upload invoices, monitor payment statuses, predict collection risks, automate reminders, and simulate future financial outcomes.
-
----
-
-# Problem Statement
-
-Traditional invoice collection systems suffer from:
-
-- Manual invoice entry
-- Lack of payment visibility
-- Delayed collections
-- No intelligent risk prediction
-- Poor cash flow forecasting
-- Manual follow-up emails
-- Multiple disconnected finance tools
+Think of it as an autopilot for collections plus a CFO co-pilot that actually reads your ledger.
 
 ---
 
-# Solution
+## 🔥 The Problem
 
-InvoNest provides a centralized AI-powered finance workspace featuring:
+> Most businesses don't fail because they aren't profitable. **They fail because they run out of cash.**
 
-- OCR Invoice Processing
-- Accounts Receivable Ledger
-- AI CFO Copilot
-- Delay Risk Prediction
-- Financial Digital Twin Simulator
-- Automated Reminder Workflows
-- Payment Tracking
-- Interactive Analytics Dashboard
+- ⏳ **Late payments** — cash gets trapped in unpaid invoices for weeks.
+- 🕳️ **No visibility** — you can't see *when* money is actually arriving, so hiring and spending become guesswork.
+- 🔁 **Manual, inconsistent chasing** — finance teams burn hours sending reminders instead of driving strategy.
+- 🎲 **Five people, five different runway numbers** — nobody trusts the forecast.
 
----
+## ✅ The Solution
 
-# 📸 Screenshots
+InvoNest turns accounts receivable from a spreadsheet chore into an intelligent, self-running system:
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="landing..png" width="450"/>
-      <br/>
-      <sub><b>Landing Page</b></sub>
-    </td>
-    <td align="center">
-      <img src="platform in action.png" width="450"/>
-      <br/>
-      <sub><b>Platform in Action</b></sub>
-    </td>
-  </tr>
-
-  <tr>
-    <td align="center">
-      <img src="plans.png" width="450"/>
-      <br/>
-      <sub><b>Pricing Plans</b></sub>
-    </td>
-    <td align="center">
-      <img src="book demo.png" width="450"/>
-      <br/>
-      <sub><b>Book Live Demo</b></sub>
-    </td>
-  </tr>
-
-  <tr>
-    <td align="center">
-      <img src="acc receivable legder.png" width="450"/>
-      <br/>
-      <sub><b>Accounts Receivable Ledger</b></sub>
-    </td>
-    <td align="center">
-      <img src="stack.png" width="450"/>
-      <br/>
-      <sub><b>Integrations Hub</b></sub>
-    </td>
-  </tr>
-</table>
+| Instead of… | InvoNest gives you… |
+|---|---|
+| Reacting after an invoice is already overdue | **Predictive risk scoring** — a warning *before* the due date |
+| Manually emailing every client | **Automated escalation** — email → WhatsApp, on schedule, with a payment link in every message |
+| Guessing your cash position | **Real-time runway & cash-flow forecasting** |
+| Digging through spreadsheets | An **AI CFO Copilot** you can ask in plain English |
+| Copy-pasting invoices | **OCR extraction** — drop a PDF, get structured data |
 
 ---
 
-# 🚀 Key Features
+## 🚀 Why startups love it
 
-## AI Invoice OCR
-
-- Upload PDF, PNG, and JPG invoices
-- Automatically extracts:
-  - Invoice Number
-  - Client Name
-  - Invoice Date
-  - Due Date
-  - Amount
-- Automatically inserts invoices into the ledger
+- **Free to start** — the Starter plan is ₹0/month for up to 50 active client ledgers.
+- **Collections that run themselves** — set it up once; every overdue invoice gets chased automatically.
+- **One honest runway number** — instead of five conflicting guesses, board meetings start from a single source of truth.
+- **Ask, don't dig** — *"Can we afford to hire two engineers next quarter?"* → get a real answer from your live ledger.
+- **Plugs into what you already use** — QuickBooks, Xero, Zoho, Stripe, Razorpay, Gmail, WhatsApp and more.
 
 ---
 
-## Accounts Receivable Ledger
+## 🧩 Core Features
 
-Manage the complete invoice lifecycle.
-
-Supported statuses:
-
-- Draft
-- Sent
-- Viewed
-- Due
-- Overdue
-- Paid
-- Cancelled
-
-Track:
-
-- Outstanding invoices
-- Due invoices
-- Recovery status
-- Delay risk
-- Client balances
+| Feature | What it does |
+|---|---|
+| 📊 **Overview / Liquidity Pulse** | Outstanding, overdue, recovery rate & runway KPIs — computed live from your data |
+| 👥 **Client Ledger** | Per-client balances, delay-risk scoring, one-click reminders |
+| 🧾 **Invoice OCR Upload** | Extracts invoice data from PDFs/images with high accuracy |
+| 🤖 **AI CFO Copilot** | Natural-language chat grounded in your real ledger (report-first, no invented numbers) |
+| 🔮 **Scenario Simulator** | Model "what if our biggest client defaults?" style questions (digital twin) |
+| ⚡ **Reminder Builder** | Visual escalation workflows — email + WhatsApp with embedded payment links |
+| 🛡️ **Risk Engine** | Predicts late-payment probability from historical behaviour |
+| 🔌 **Integrations Platform** | OAuth / API connections, background sync, webhooks, encrypted tokens |
 
 ---
 
-## AI CFO Copilot
+## 🔗 Integrations
 
-Ask questions like:
+A production-grade integrations platform — OAuth 2.0 (with automatic token refresh) or API keys, encrypted-at-rest credentials, background sync workers and signature-verified webhooks.
 
-- Which invoices are most at risk?
-- Can we afford another employee?
-- What is our projected cash flow?
-- Which customers should be contacted first?
-- How much money is expected this month?
+| Provider | Category | Auth | Syncs |
+|---|---|---|---|
+| **QuickBooks Online** | Accounting | OAuth 2.0 | Customers, invoices, outstanding balances, payments |
+| **Xero** | Accounting | OAuth 2.0 | Contacts, invoices, payments, credit notes |
+| **Zoho Books** | Accounting | OAuth 2.0 | Customers, invoices, payments |
+| **Salesforce** | CRM | OAuth 2.0 | Accounts, contacts, opportunities |
+| **Stripe** | Payments | API key | Customers, payments, payment intents, invoices |
+| **Razorpay** | Payments | API key | Payments, orders, customers |
+| **Gmail** | Communication | OAuth 2.0 | Email conversations, reminder history, delivery status |
+| **WhatsApp Business** | Communication | Meta Cloud API | Message history, delivery status, read receipts |
 
----
-
-## Delay Risk Prediction
-
-AI-powered payment behavior analysis.
-
-Provides:
-
-- Delay Risk %
-- Customer ranking
-- Recovery priority
-- Recommended follow-up actions
+> Credentials are **never** stored in source — they live only in gitignored `.env` files and are encrypted (AES-256-GCM) at rest.
 
 ---
 
-## Financial Digital Twin
+## 🛠️ Tech Stack
 
-Run business simulations such as:
-
-- Customer payment delays
-- Hiring employees
-- Revenue changes
-- Payroll increases
-- Operating expense growth
-
-Forecast:
-
-- Cash runway
-- Working capital
-- Monthly cash flow
-- Collection timeline
+**Frontend** · Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Framer Motion
+**Backend** · NestJS 10 · Prisma 5 · PostgreSQL (PGlite for local dev) · Redis + BullMQ (optional, with a timer fallback)
+**AI** · Google Gemini (AI CFO Copilot) · **Email** · Resend
+**Architecture** · Clean, modular services · JWT auth (deny-by-default) · rate-limited, structured logging · production-ready OAuth/webhook flows
 
 ---
 
-## Reminder Automation
+## 📸 Screenshots
 
-Automatically schedule:
+> Drop your captures into `docs/screenshots/` and they'll render here.
 
-- Email reminders
-- WhatsApp reminders
-
-Supports multiple reminder stages before and after due dates.
-
----
-
-## Mock Payment Gateway
-
-Demonstrates a Stripe-like payment workflow.
-
-Features:
-
-- Mock payment confirmation
-- Automatic invoice settlement
-- Dashboard metric updates
-- Ledger synchronization
+| Landing | Dashboard | Integrations |
+|---|---|---|
+| `docs/screenshots/landing.png` | `docs/screenshots/dashboard.png` | `docs/screenshots/integrations.png` |
 
 ---
 
-## Contact Sales
+## ⚡ Getting Started
 
-Enterprise lead management including:
-
-- Demo requests
-- Company information
-- Business requirements
-- Lead storage
-
----
-
-## Integrations Hub
-
-Supports integration with:
-
-- Stripe
-- Razorpay
-- QuickBooks
-- Xero
-- Gmail
-- Outlook
-- HubSpot
-- Slack
-
----
-
-# 🏛️ System Architecture
-
-```mermaid
-graph LR
-
-subgraph Frontend
-A[Dashboard]
-B[OCR Upload]
-C[Accounts Receivable Ledger]
-D[AI CFO Copilot]
-E[Scenario Simulator]
-F[Reminder Builder]
-G[Contact Sales]
-H[Mock Stripe Payment]
-end
-
-subgraph Backend
-I[Invoice Service]
-J[OCR Engine]
-K[Delay Risk Engine]
-L[Cash Flow Forecast]
-M[Reminder Scheduler]
-N[Lead Management]
-end
-
-subgraph Database
-O[(PostgreSQL)]
-end
-
-subgraph External
-P[SMTP]
-Q[WhatsApp]
-R[Gemini AI]
-end
-
-B --> J
-A --> I
-C --> I
-D --> R
-E --> L
-F --> M
-G --> N
-H --> I
-
-I --> O
-J --> O
-K --> O
-L --> O
-M --> O
-N --> O
-
-J --> K
-K --> L
-
-M --> P
-M --> Q
-
-L --> A
-R --> A
-```
-
----
-
-# 🛠 Technology Stack
-
-## Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Lucide React
-
-## Backend
-
-- NestJS
-- Express.js
-- Node.js
-
-## Database
-
-- PostgreSQL
-- Prisma ORM
-
-## AI & Automation
-
-- Google Gemini API
-- OCR Engine
-- Nodemailer
-- WhatsApp API (Mock)
-
----
-
-# 🔄 Application Workflow
-
-```text
-Invoice Upload
-      │
-      ▼
-OCR Processing
-      │
-      ▼
-Invoice Parsed
-      │
-      ▼
-Stored in PostgreSQL
-      │
-      ▼
-Delay Risk Prediction
-      │
-      ▼
-Accounts Receivable Ledger
-      │
-      ▼
-AI CFO Analysis
-      │
-      ▼
-Reminder Automation
-      │
-      ▼
-Payment Received
-      │
-      ▼
-Invoice Marked as Paid
-```
-
----
-
-# 📡 API Endpoints
-
-| Method | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/api/invoices/upload` | Upload invoice |
-| GET | `/api/invoices` | Retrieve invoices |
-| PATCH | `/api/invoices/:id/status` | Update invoice status |
-| GET | `/api/risk` | Get delay risk analysis |
-| POST | `/api/copilot/chat` | AI CFO chat |
-| POST | `/api/scenario/simulate` | Run financial simulation |
-| POST | `/api/reminders/send` | Trigger reminders |
-| POST | `/api/payment/mock` | Mock payment |
-| POST | `/api/contact-sales` | Submit sales enquiry |
-
----
-
-# 📂 Project Structure
-
-```text
-InvoNest
-│
-├── frontend
-│   ├── app
-│   ├── components
-│   ├── hooks
-│   ├── lib
-│   └── public
-│
-├── backend
-│   ├── controllers
-│   ├── routes
-│   ├── services
-│   ├── middleware
-│   ├── prisma
-│   └── utils
-│
-├── database
-│   └── PostgreSQL
-│
-└── README.md
-```
-
----
-
-# 💻 Installation
-
-## Prerequisites
-
-- Node.js 18+
-- PostgreSQL
-- npm
-
-## Clone Repository
+This is an npm-workspaces monorepo (`frontend` + `backend`).
 
 ```bash
-git clone https://github.com/your-username/InvoNest.git
-
-cd InvoNest
-```
-
-## Install Dependencies
-
-```bash
+# 1. Install everything
 npm install
+
+# 2. Configure environment (copy the examples, fill in your own keys)
+cp backend/.env.example backend/.env
+#   frontend also needs: frontend/.env.local
+#   (NEXT_PUBLIC_API_URL, NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+
+# 3. Start the local Postgres (PGlite) on :5432
+node pg-server.js
+
+# 4. Push the schema
+cd backend && npx prisma db push && cd ..
+
+# 5. Run the app (two terminals)
+npm run dev:backend     # NestJS API on http://localhost:3001
+npm run dev:frontend    # Next.js on   http://localhost:3000
 ```
 
-## Configure Environment
+Open **http://localhost:3000** — or jump straight into the demo workspace at **/dashboard**.
 
-```env
-DATABASE_URL=
-GEMINI_API_KEY=
-JWT_SECRET=
-PORT=3001
+> ℹ️ The large ambient sidebar video (`frontend/public/rail/rail.mp4`, ~120 MB) is excluded from the repo (GitHub's 100 MB limit). The app runs fine without it; add your own or re-encode a lightweight version.
+
+---
+
+## 🗂️ Project Structure
+
 ```
-
-## Start Development
-
-```bash
-npm run dev
+innovest/
+├── frontend/            # Next.js 15 app (landing + dashboard)
+│   └── app/
+│       ├── page.tsx             # marketing landing
+│       ├── dashboard/           # the product (overview, clients, copilot, integrations…)
+│       └── components/          # shared UI (3D reveals, glass cards, catalog…)
+├── backend/             # NestJS API
+│   └── src/
+│       ├── integrations/        # OAuth, sync engine, webhooks, workers
+│       ├── ai-copilot/          # AI CFO Copilot
+│       ├── risk-engine/         # late-payment prediction
+│       ├── invoices/ clients/ forecasting/ …
+│       └── prisma/              # schema & seed
+└── pg-server.js         # local PGlite Postgres server
 ```
 
 ---
 
-# 🚀 Deployment
+## 🔒 Security
 
-## Frontend
-
-- Vercel
-
-## Backend
-
-- Railway
-- Render
-
-## Database
-
-- PostgreSQL
-- Supabase
+- Secrets live only in gitignored `.env` files — never committed.
+- Integration tokens are encrypted (AES-256-GCM) at rest.
+- Webhook endpoints verify provider HMAC signatures and de-duplicate events.
+- Every API route is authenticated by default (JWT), opting out only where explicitly public.
 
 ---
 
-# 🔮 Future Enhancements
+<div align="center">
 
-- Stripe Checkout Integration
-- Razorpay Integration
-- QuickBooks Sync
-- Multi-tenant Workspaces
-- Team Roles & Permissions
-- AI Collections Agent
-- Voice-enabled CFO Assistant
-- Multi-currency Support
-- Predictive Machine Learning Models
+**InvoNest** — stop chasing payments, start predicting cash flow.
 
----
-
-# 📄 License
-
-This project is licensed under the **MIT License**
+</div>

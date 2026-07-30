@@ -2,7 +2,9 @@ const { PGlite } = require('@electric-sql/pglite');
 const { PGLiteSocketServer } = require('@electric-sql/pglite-socket');
 
 async function run() {
-  const db = await PGlite.create();
+  // Persist to disk. With no path PGlite runs purely in memory, so every restart
+  // silently dropped every table and the app came back up with an empty database.
+  const db = await PGlite.create({ dataDir: './.pgdata' });
   
   const server = new PGLiteSocketServer({
     db,

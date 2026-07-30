@@ -3,6 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import DashboardProvider from './DashboardProvider';
+import ContentVideo from './ContentVideo';
+import WorkspaceSwitcher from './WorkspaceSwitcher';
+import RailVideo from './RailVideo';
+import AccountCard from './AccountCard';
 import { 
   Activity, 
   Briefcase, 
@@ -16,7 +21,9 @@ import {
   Settings,
   HelpCircle,
   Menu,
-  ChevronDown
+  ChevronDown,
+  Wallet,
+  Blocks
 } from 'lucide-react';
 
 export default function DashboardLayout({
@@ -33,101 +40,134 @@ export default function DashboardLayout({
   const [showNotifications, setShowNotifications] = useState(false);
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden text-[#0d2227] font-sans">
+    <div className="zarss flex h-screen overflow-hidden text-[#1c1c1c] gap-4 p-4">
       
       {/* SIDEBAR */}
-      <aside className="w-64 bg-[#abc6d8]/15 border-r border-[#0d2227]/15 flex flex-col justify-between hidden md:flex">
-        <div>
+      <aside className="z-rail w-64 shrink-0 flex-col justify-between hidden md:flex relative overflow-hidden">
+        {/* Rail backdrop — the attached ambient video, behind the whole rail. */}
+        <RailVideo />
+
+        <div className="relative z-10 overflow-y-auto">
           {/* Logo and Tenant Selector */}
-          <div className="p-5 border-b border-[#0d2227]/10 flex items-center justify-between">
+          <div className="p-5 border-b border-white/10 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#0d2227] to-[#abc6d8] flex items-center justify-center font-bold text-white text-xs">
                 N
               </div>
-              <span className="font-extrabold text-sm tracking-tight text-[#0d2227] font-editorial uppercase">InvoNest</span>
+              <span className="font-extrabold text-sm tracking-tight text-white uppercase">InvoNest</span>
             </Link>
-            <span className="text-[10px] text-zinc-500 font-mono bg-white border border-zinc-200 px-2 py-0.5 rounded uppercase">v2.0</span>
+            <span className="text-[10px] text-white/45 font-mono border border-white/15 px-2 py-0.5 rounded uppercase">v2.0</span>
           </div>
 
-          <div className="p-4 border-b border-[#0d2227]/10">
-            <div className="flex items-center justify-between text-xs text-[#0d2227]/85 bg-white border border-[#0d2227]/10 px-3 py-2 rounded-lg cursor-pointer hover:bg-zinc-50 transition-all">
-              <span className="font-semibold truncate max-w-[120px]">Global Solutions</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#0d2227]/50" />
-            </div>
+          <div className="p-4 border-b border-white/10">
+            <WorkspaceSwitcher />
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-4 space-y-1.5 text-xs font-semibold text-[#0d2227]/80">
+          <nav className="p-4 space-y-1 text-xs font-semibold">
             <Link 
               href="/dashboard" 
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${
-                isActive('/dashboard') 
-                  ? 'bg-[#abc6d8]/35 text-[#0d2227] shadow-sm' 
-                  : 'hover:bg-[#abc6d8]/15 hover:text-[#0d2227]'
+              data-active={pathname === '/dashboard'}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all"
+            >
+              <Activity className="w-4 h-4 opacity-90" /> Overview Panel
+            </Link>
+            <div className="px-3 py-2.5 text-[10px] uppercase font-bold text-white/35 tracking-wider font-mono">A/R Ledger</div>
+                        <Link
+              href="/dashboard/clients"
+              data-active={pathname === '/dashboard/clients'}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                ''
               }`}
             >
-              <Activity className="w-4 h-4 text-[#0d2227]" /> Overview Panel
+              <Briefcase className="w-4 h-4 opacity-70" /> Client Ledger
             </Link>
-            <div className="px-3 py-2.5 text-[10px] uppercase font-bold text-[#0d2227]/40 tracking-wider font-mono">A/R Ledger</div>
-            <a href="#invoices" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#abc6d8]/15 hover:text-[#0d2227] transition-all">
-              <Briefcase className="w-4 h-4 text-[#0d2227]/70" /> Client Ledger
-            </a>
-            <a href="#ocr-upload" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#abc6d8]/15 hover:text-[#0d2227] transition-all">
-              <UploadCloud className="w-4 h-4 text-[#0d2227]/70" /> Invoice Upload
-            </a>
-            <div className="px-3 py-2.5 text-[10px] uppercase font-bold text-[#0d2227]/40 tracking-wider font-mono">AI Intelligence</div>
-            <a href="#ai-cfo" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#abc6d8]/15 hover:text-[#0d2227] transition-all">
-              <MessageSquare className="w-4 h-4 text-[#0d2227]/70" /> AI CFO Copilot
-            </a>
-            <a href="#scenario-simulator" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#abc6d8]/15 hover:text-[#0d2227] transition-all">
-              <TrendingUp className="w-4 h-4 text-[#0d2227]/70" /> Scenario Simulator
-            </a>
+                        <Link
+              href="/dashboard/upload"
+              data-active={pathname === '/dashboard/upload'}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                ''
+              }`}
+            >
+              <UploadCloud className="w-4 h-4 opacity-70" /> Invoice Upload
+            </Link>
+            <Link
+              href="/dashboard/expenses"
+              data-active={pathname === '/dashboard/expenses'}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                ''
+              }`}
+            >
+              <Wallet className="w-4 h-4 opacity-70" /> Expenses &amp; Cash
+            </Link>
+            <div className="px-3 py-2.5 text-[10px] uppercase font-bold text-white/35 tracking-wider font-mono">AI Intelligence</div>
+                        <Link
+              href="/dashboard/copilot"
+              data-active={pathname === '/dashboard/copilot'}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                ''
+              }`}
+            >
+              <MessageSquare className="w-4 h-4 opacity-70" /> AI CFO Copilot
+            </Link>
+                        <Link
+              href="/dashboard/simulator"
+              data-active={pathname === '/dashboard/simulator'}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${
+                ''
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 opacity-70" /> Scenario Simulator
+            </Link>
 
-            <Link href="/dashboard/documentation#automation-workflow" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#abc6d8]/15 hover:text-[#0d2227] transition-all">
-              <Zap className="w-4 h-4 text-[#0d2227]/70" /> Reminder Builder
+            <Link
+              href="/dashboard/reminders"
+              data-active={pathname === '/dashboard/reminders'}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+            >
+              <Zap className="w-4 h-4 opacity-70" /> Reminder Builder
+            </Link>
+            <div className="px-3 py-2.5 text-[10px] uppercase font-bold text-white/35 tracking-wider font-mono">Data Platform</div>
+            <Link
+              href="/dashboard/integrations"
+              data-active={pathname === '/dashboard/integrations'}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg transition-all"
+            >
+              <Blocks className="w-4 h-4 opacity-70" /> Integrations
             </Link>
           </nav>
         </div>
 
         {/* Footer actions */}
-        <div className="p-4 border-t border-[#0d2227]/10 space-y-2 text-xs font-medium text-[#0d2227]/70">
+        <div className="relative z-10 p-4 border-t border-white/10 space-y-1 text-xs font-medium">
           <Link 
             href="/dashboard/setup" 
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
-              isActive('/dashboard/setup') 
-                ? 'bg-[#abc6d8]/35 text-[#0d2227] shadow-sm font-semibold' 
-                : 'hover:text-[#0d2227] hover:bg-[#abc6d8]/15'
+            data-active={pathname === '/dashboard/setup'}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
+              ''
             }`}
           >
             <Settings className="w-4 h-4" /> Setup & Ledgers
           </Link>
           <Link 
             href="/dashboard/documentation" 
-            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
-              isActive('/dashboard/documentation') 
-                ? 'bg-[#abc6d8]/35 text-[#0d2227] shadow-sm font-semibold' 
-                : 'hover:text-[#0d2227] hover:bg-[#abc6d8]/15'
+            data-active={pathname === '/dashboard/documentation'}
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-all ${
+              ''
             }`}
           >
             <HelpCircle className="w-4 h-4" /> Documentation
           </Link>
-          <div className="flex items-center gap-3 px-3 py-2.5 bg-white border border-[#0d2227]/15 rounded-xl">
-            <div className="w-8 h-8 rounded-full bg-[#0d2227] text-white flex items-center justify-center font-extrabold text-xs">
-              SJ
-            </div>
-            <div>
-              <div className="font-bold text-[#0d2227] text-[11px] leading-none">Sarah Jenkins</div>
-              <span className="text-[10px] text-[#0d2227]/60 font-bold font-mono">FINANCE ADMIN</span>
-            </div>
-          </div>
+          <AccountCard />
         </div>
       </aside>
 
       {/* MAIN SCREEN AREA */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
+        <ContentVideo />
         
         {/* HEADER TOOLBAR */}
-        <header className="h-16 border-b border-[#0d2227]/10 bg-white px-6 flex justify-between items-center z-30 shrink-0">
+        <header className="relative z-30 h-16 px-2 flex justify-between items-center shrink-0 mb-1">
           <button className="md:hidden text-zinc-600 hover:text-[#0d2227]">
             <Menu className="w-5 h-5" />
           </button>
@@ -179,8 +219,10 @@ export default function DashboardLayout({
         </header>
 
         {/* WORKSPACE CONTENT BODY */}
-        <main className="flex-1 overflow-y-auto bg-[#f8fafc]">
-          {children}
+        {/* Content tone is applied to the shell only. Cards inside keep the
+            existing --lg-* glass tokens, so we don't stack glass on glass. */}
+        <main className="relative z-10 flex-1 overflow-y-auto rounded-[22px]">
+          <DashboardProvider>{children}</DashboardProvider>
         </main>
       </div>
 

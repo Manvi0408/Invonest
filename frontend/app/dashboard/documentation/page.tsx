@@ -16,8 +16,27 @@ import {
   Zap,
   TrendingUp,
   Cpu,
-  Database
+  Database,
+  Lock,
+  Mail,
+  MessageSquare,
+  Smartphone
 } from 'lucide-react';
+import { usePlan, type FeatureKey } from '../../lib/usePlan';
+import UpgradePrompt, { FeatureLock, type UpgradeTrigger } from '../../components/UpgradePrompt';
+
+/** Email is on every plan; WhatsApp and SMS are Premium-gated. */
+const CHANNELS: Array<{
+  id: 'EMAIL' | 'WHATSAPP' | 'SMS';
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  feature?: FeatureKey;
+  trigger?: UpgradeTrigger;
+}> = [
+  { id: 'EMAIL', label: 'Email reminder', icon: Mail },
+  { id: 'WHATSAPP', label: 'WhatsApp escalation', icon: MessageSquare, feature: 'whatsapp_reminders', trigger: 'whatsapp_locked' },
+  { id: 'SMS', label: 'SMS reminder', icon: Smartphone, feature: 'sms_reminders', trigger: 'sms_locked' },
+];
 
 interface CodeSnippet {
   language: 'bash' | 'javascript' | 'python';
@@ -36,6 +55,11 @@ interface Endpoint {
 export default function DocumentationPage() {
   const [activeTab, setActiveTab] = useState<'guide' | 'api' | 'faq'>('guide');
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
+
+  // Reminder Builder channel selection + plan gating
+  const { plan, loading: planLoading, hasFeature } = usePlan();
+  const [channel, setChannel] = useState<'EMAIL' | 'WHATSAPP' | 'SMS'>('EMAIL');
+  const [upgrade, setUpgrade] = useState<UpgradeTrigger | null>(null);
   
   // API Reference state
   const [selectedEndpointIndex, setSelectedEndpointIndex] = useState(0);
@@ -363,10 +387,61 @@ print(response.json())`
                     </div>
                   </div>
 
-                  {/* Right: Explanatory Details */}
+                  {/* Right: Channel picker + explanatory details */}
                   <div className="space-y-4 flex flex-col justify-center">
+                    {/* Reminder Builder channel selection. Premium-only channels are
+                        disabled with a lock; the API rejects them regardless. */}
+                    <div className="bg-zinc-50 dark:bg-[#121214] border border-[#0d2227]/10 rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-bold text-[10px] uppercase font-mono tracking-wider text-zinc-400">
+                          Delivery channels
+                        </h4>
+                        {planLoading ? null : (
+                          <span className="text-[9px] font-mono text-zinc-400">
+                            {plan?.plan === 'FREE' ? 'Free plan' : 'Premium'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        {CHANNELS.map((ch) => {
+                          const locked = ch.feature ? !hasFeature(ch.feature) : false;
+                          return (
+                            <button
+                              key={ch.id}
+                              type="button"
+                              // aria-disabled, not `disabled`: a natively disabled button
+                              // swallows the click, which would make the upgrade path
+                              // unreachable. It still reads as unavailable to AT.
+                              aria-disabled={locked}
+                              onClick={() => (locked ? setUpgrade(ch.trigger!) : setChannel(ch.id))}
+                              title={
+                                locked
+                                  ? `${ch.label} is a Premium feature — click to see what it does`
+                                  : `Send reminders via ${ch.label}`
+                              }
+                              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg border text-[11px] font-semibold transition-all text-left ${
+                                locked
+                                  ? 'border-amber-300/60 bg-amber-50/60 text-[#5a4a1f] hover:border-amber-400 hover:bg-amber-50 cursor-pointer'
+                                  : channel === ch.id
+                                    ? 'border-green-500/50 bg-green-500/10 text-[#0d2227] dark:text-green-300'
+                                    : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:border-green-500/40'
+                              }`}
+                            >
+                              {locked ? <Lock className="w-3.5 h-3.5 shrink-0" /> : <ch.icon className="w-3.5 h-3.5 shrink-0" />}
+                              <span className="flex-1">{ch.label}</span>
+                              {locked && <FeatureLock />}
+                              {!locked && channel === ch.id && (
+                                <span className="text-[9px] font-mono text-green-500">SELECTED</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <h4 className="font-bold text-[10px] uppercase font-mono tracking-wider text-zinc-400">Collections that run themselves</h4>
-                    
+
                     <div className="space-y-3.5 text-[11px] leading-relaxed text-zinc-500">
                       <div className="flex gap-2">
                         <span className="text-green-500 font-bold text-xs">✓</span>
@@ -530,6 +605,8 @@ print(response.json())`
         </div>
 
       </div>
+
+      {upgrade && <UpgradePrompt trigger={upgrade} onClose={() => setUpgrade(null)} />}
 
     </div>
   );

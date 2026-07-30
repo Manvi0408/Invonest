@@ -1,9 +1,12 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
 import { Queue, Worker, Job } from 'bullmq';
 import * as QueueMQ from 'bullmq';
+import { ReminderChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RiskEngineService } from '../risk-engine/risk-engine.service';
 import { ForecastingService } from '../forecasting/forecasting.service';
+import { AutomationService } from '../automation/automation.service';
+import { PlanService } from '../billing/plan.service';
 
 @Injectable()
 export class QueueService implements OnModuleInit {
@@ -16,6 +19,8 @@ export class QueueService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly riskEngine: RiskEngineService,
     private readonly forecasting: ForecastingService,
+    private readonly automation: AutomationService,
+    private readonly plans: PlanService,
   ) {}
 
   async onModuleInit() {
@@ -88,12 +93,7 @@ export class QueueService implements OnModuleInit {
     this.logger.log(`Processing job: ${name}`);
     switch (name) {
       case 'risk-recalculation':
-        // Scan all clients and re-assess risk profile indices
-        const clients = await this.prisma.client.findMany({ select: { id: true } });
-        for (const client of clients) {
-          await this.riskEngine.calculateClientHealthScore(client.id);
-        }
-        this.logger.log(`Completed risk-recalculations for ${clients.length} clients.`);
+        await this.runRiskRecalculation();
         break;
 
       case 'forecast-generator':
@@ -106,21 +106,133 @@ export class QueueService implements OnModuleInit {
         break;
 
       case 'reminder-scheduler':
-        // Check for reminders due today and run them
-        const today = new Date();
-        const dueReminders = await this.prisma.reminder.findMany({
-          where: {
-            status: 'SCHEDULED',
-            scheduledFor: { lte: today },
-          },
-        });
-        
-        this.logger.log(`Discovered ${dueReminders.length} reminders ready for execution.`);
-        // Note: Execution triggers could be mapped through the Automation Service
+        await this.runReminderScheduler();
         break;
 
       default:
         this.logger.warn(`Job handler for ${name} is not registered.`);
     }
+  }
+
+  /**
+   * Risk is recomputed for everyone on every run — the difference is how often the
+   * result is *written*. Premium sees a fresh score nightly; Free has its score
+   * persisted once a week, so the number they see is deliberately (and visibly)
+   * stale rather than silently degraded. The UI reads RiskPrediction.updatedAt to
+   * render "Updated X ago".
+   */
+  private async runRiskRecalculation() {
+    const orgs = await this.prisma.organization.findMany({
+      select: { id: true, plan: true, invoiceUploadLimit: true, teamSeatLimit: true, chatbotCreditLimit: true, dataRetentionDays: true },
+    });
+
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    let written = 0;
+    let skipped = 0;
+
+    for (const org of orgs) {
+      const liveScoring = this.plans.hasFeature(org as any, 'live_risk_scoring');
+
+      const clients = await this.prisma.client.findMany({
+        where: { organizationId: org.id },
+        select: { id: true },
+      });
+      for (const client of clients) {
+        await this.riskEngine.calculateClientHealthScore(client.id);
+      }
+
+      const invoices = await this.prisma.invoice.findMany({
+        where: { organizationId: org.id, status: { notIn: ['PAID', 'DRAFT'] } },
+        select: { id: true, riskPrediction: { select: { updatedAt: true } } },
+      });
+
+      for (const invoice of invoices) {
+        if (!liveScoring) {
+          const lastWrite = invoice.riskPrediction?.updatedAt;
+          // Free plan: hold the previous score until a week has elapsed.
+          if (lastWrite && now - lastWrite.getTime() < WEEK_MS) {
+            skipped++;
+            continue;
+          }
+        }
+        await this.riskEngine.predictInvoiceRisk(invoice.id);
+        written++;
+      }
+    }
+
+    this.logger.log(
+      `Risk recalculation complete across ${orgs.length} orgs — ${written} scores written, ${skipped} held (free-plan weekly batch).`,
+    );
+  }
+
+  /**
+   * Free plan gets one fixed nudge 7 days before the due date.
+   * Premium gets the escalating ladder: day -7 email, day 0 email, day +7 WhatsApp.
+   */
+  private async runReminderScheduler() {
+    const now = new Date();
+
+    const dueReminders = await this.prisma.reminder.findMany({
+      where: { status: 'SCHEDULED', scheduledFor: { lte: now } },
+      select: { id: true },
+    });
+    for (const reminder of dueReminders) {
+      await this.automation.triggerReminderExecution(reminder.id);
+    }
+
+    const orgs = await this.prisma.organization.findMany({
+      select: { id: true, plan: true, invoiceUploadLimit: true, teamSeatLimit: true, chatbotCreditLimit: true, dataRetentionDays: true },
+    });
+
+    let scheduled = 0;
+
+    for (const org of orgs) {
+      const ladder = this.plans.hasFeature(org as any, 'auto_escalation_ladder');
+
+      // Premium escalates through channels; free gets the single pre-due nudge.
+      const steps: Array<{ offsetDays: number; channel: ReminderChannel }> = ladder
+        ? [
+            { offsetDays: -7, channel: ReminderChannel.EMAIL },
+            { offsetDays: 0, channel: ReminderChannel.EMAIL },
+            { offsetDays: 7, channel: ReminderChannel.WHATSAPP },
+          ]
+        : [{ offsetDays: -7, channel: ReminderChannel.EMAIL }];
+
+      const invoices = await this.prisma.invoice.findMany({
+        where: { organizationId: org.id, status: { notIn: ['PAID', 'DRAFT'] } },
+        select: { id: true, dueDate: true, reminders: { select: { scheduledFor: true, channel: true } } },
+      });
+
+      for (const invoice of invoices) {
+        for (const step of steps) {
+          const fireAt = new Date(invoice.dueDate);
+          fireAt.setDate(fireAt.getDate() + step.offsetDays);
+          if (fireAt < now) continue; // window already passed
+
+          // Idempotency: never double-book the same rung of the ladder.
+          const already = invoice.reminders.some(
+            (r) =>
+              r.channel === step.channel &&
+              Math.abs(r.scheduledFor.getTime() - fireAt.getTime()) < 12 * 60 * 60 * 1000,
+          );
+          if (already) continue;
+
+          await this.prisma.reminder.create({
+            data: {
+              invoiceId: invoice.id,
+              channel: step.channel,
+              scheduledFor: fireAt,
+              status: 'SCHEDULED',
+            },
+          });
+          scheduled++;
+        }
+      }
+    }
+
+    this.logger.log(
+      `Reminder scheduler: executed ${dueReminders.length} due, queued ${scheduled} new across ${orgs.length} orgs.`,
+    );
   }
 }

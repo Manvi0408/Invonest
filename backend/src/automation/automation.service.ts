@@ -1,12 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReminderChannel, ReminderStatus } from '@prisma/client';
+import { ActivityService } from '../activity/activity.service';
 
 @Injectable()
 export class AutomationService {
   private readonly logger = new Logger(AutomationService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activity: ActivityService,
+  ) {}
 
   async createReminderWorkflow(orgId: string, workflowSteps: any[]) {
     // Stores visual automation sequence in reports/parameters configuration metadata
@@ -100,6 +104,18 @@ export class AutomationService {
           sentAt: new Date(),
         },
       });
+
+      await this.activity.record(
+        reminder.invoice.organizationId,
+        'REMINDER_SENT',
+        'System',
+        {
+          reminderId: reminder.id,
+          invoiceNumber: reminder.invoice.invoiceNumber,
+          clientName: client.name,
+          channel: reminder.channel,
+        },
+      );
 
       // Update invoice timeline to reflect communication opened/sent
       const timeline = (reminder.invoice.timeline as any[]) || [];

@@ -45,3 +45,13 @@ Thumbs.db
 *.sqlite
 pg-data/
 data/
+
+# Local database data (PGlite) — never commit
+.pgdata/
+
+# Tooling / scratch — not part of the product
+.playwright-mcp/
+auth-dashboard.png
+
+# Oversized media (exceeds GitHub's 100MB limit — distribute separately)
+frontend/public/rail/rail.mp4

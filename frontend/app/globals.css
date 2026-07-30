@@ -1,20 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-@font-face {
-  font-family: 'Brockmann';
-  src: url('https://adchitects.co/_next/static/media/brockmann_regular_webfont-s.p.0f1_6dhxo98hw.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'PP Mori';
-  src: url('https://adchitects.co/_next/static/media/PPMori_Regular-s.p.36ojup24d45dy.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* Fonts are supplied by next/font in app/layout.tsx — self-hosted, preloaded,
+   and with real weight ranges. The previous @font-face rules hotlinked
+   content-hashed .woff2 files from adchitects.co (a third party's CDN) and only
+   ever loaded weight 400, which made genuine bold headings impossible. */
 
 @tailwind base;
 @tailwind components;
@@ -24,20 +11,183 @@
   --background: #f8fafc;
   --foreground: #0d2227;
   --border: rgba(13, 34, 39, 0.08);
+
+  /* ---- Liquid glass tokens ----------------------------------------------
+     Contrast comes from filtering the BACKDROP (brightness < 1) rather than
+     from an opaque fill, so surfaces stay genuinely see-through while text
+     on top still holds its contrast ratio. Raising opacity instead would
+     make them read as flat grey slabs. */
+  --lg-blur: 30px;
+  --lg-saturate: 180%;
+  --lg-brightness: 0.55;
+  /* Near-transparent on purpose. The blur + brightness filter carries the
+     contrast; a heavier fill would read as a grey slab, not glass. */
+  --lg-fill: rgba(255, 255, 255, 0.18);
+  --lg-border: rgba(13, 34, 39, 0.10);
+  --lg-highlight: rgba(255, 255, 255, 0.55);
+  --lg-shadow: 0 12px 40px rgba(13, 34, 39, 0.10);
+}
+
+/* Named aliases for the status colours the metric cards already hardcode
+   (green-700 / red-600). Identical values — this only gives them a token. */
+:root {
+  --text-success: #15803d;
+  --text-danger: #dc2626;
+}
+
+/* ---- Two-tone glass surfaces -------------------------------------------
+   Tints are stored as bare RGB triples rather than finished rgba() so tint
+   and alpha stay independently swappable: dropping in a real colour later is
+   one number-triple per surface, with no restyling pass across components.
+
+   Both are deliberately neutral. The two sides separate by depth alone —
+   about 5/255 of luminance and 2 points of blue between them — so there is
+   no hue committed until a reference defines one. */
+:root {
+  --sidebar-glass-tint: 20, 20, 25;
+  --sidebar-glass-alpha: 0.5;
+  --sidebar-glass-blur: 20px;
+  --sidebar-glass-border: rgba(255, 255, 255, 0.08);
+
+  --content-glass-tint: 15, 15, 18;
+  --content-glass-alpha: 0.5;
+  --content-glass-blur: 20px;
+  --content-glass-border: rgba(255, 255, 255, 0.06);
+}
+
+.glass-sidebar {
+  background: rgba(var(--sidebar-glass-tint), var(--sidebar-glass-alpha)) !important;
+  backdrop-filter: blur(var(--sidebar-glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--sidebar-glass-blur)) saturate(140%);
+  border-color: var(--sidebar-glass-border) !important;
+}
+
+.glass-content {
+  background: rgba(var(--content-glass-tint), var(--content-glass-alpha)) !important;
+  backdrop-filter: blur(var(--content-glass-blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--content-glass-blur)) saturate(140%);
+  border-color: var(--content-glass-border) !important;
+}
+
+.dark {
+  /* Tuned for a jet-black page. The old values carried a green cast to match an
+     aurora that no longer exists, and darkened the backdrop — on #000 there is
+     nothing left to darken, so every card collapsed into the background.
+     Neutral, and lifting *up* off black instead of pressing down into it. */
+  --lg-fill: rgba(255, 255, 255, 0.055);
+  --lg-border: rgba(255, 255, 255, 0.11);
+  --lg-highlight: rgba(255, 255, 255, 0.10);
+  --lg-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  /* Brightness must not dip below 1 here: the backdrop is already pure black,
+     so anything under 1 is a no-op that only costs a compositor pass. */
+  --lg-brightness: 1.06;
+}
+
+/* The material itself. Anything wearing this reads as Apple-style liquid glass. */
+.liquid,
+.dark .bg-white,
+.dark .bg-zinc-50,
+.dark .bg-zinc-100 {
+  background-color: var(--lg-fill) !important;
+  backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  -webkit-backdrop-filter: blur(var(--lg-blur)) saturate(var(--lg-saturate)) brightness(var(--lg-brightness));
+  border-color: var(--lg-border) !important;
+  box-shadow: var(--lg-shadow), inset 0 1px 0 var(--lg-highlight) !important;
+}
+
+/* Note: no ::before sheen — it would need position:relative on all 124 card
+   surfaces, which would re-parent their absolutely-positioned children. The
+   inset highlight in the box-shadow above gives the same top-edge catch safely. */
+
+/* ---- Living green aurora behind every glass surface --------------------- */
+/* Big, heavily-blurred washes that drift over the base gradient. Opacity is high
+   and the blur enormous, so they read as one soft moving field rather than
+   discrete circles — the look in the reference. */
+.lb-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(130px);
+  will-change: transform;
+  /* Faint on purpose: the wallpaper JPEG is the design, these only animate it.
+     `screen` adds light without ever muddying the blacks the artwork relies on. */
+  opacity: 0.4;
+  mix-blend-mode: screen;
+}
+.lb-blob-a {
+  /* Sits on the wallpaper's own ember in the lower-left and gently breathes. */
+  width: 62vw;
+  height: 62vw;
+  bottom: -26%;
+  left: -16%;
+  background: radial-gradient(circle, rgba(255, 122, 26, 0.55), transparent 66%);
+  animation: lb-drift-a 26s ease-in-out infinite;
+}
+.lb-blob-b {
+  /* A deeper red-amber drifting up the middle, keeping the falloff alive. */
+  width: 52vw;
+  height: 52vw;
+  bottom: -14%;
+  left: 22%;
+  background: radial-gradient(circle, rgba(198, 62, 12, 0.4), transparent 68%);
+  animation: lb-drift-b 32s ease-in-out infinite;
+}
+
+.lb-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0.06 0 0 0 0 0.10 0 0 0 0 0.08 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes lb-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(6vw, 5vh, 0) scale(1.14); }
+}
+@keyframes lb-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.06); }
+  50%      { transform: translate3d(-7vw, -4vh, 0) scale(1); }
+}
+@keyframes lb-drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(0.94); }
+  50%      { transform: translate3d(-5vw, 6vh, 0) scale(1.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-blob { animation: none !important; }
+}
+
+/* Inputs and small chips take a lighter pour so they don't out-weigh cards. */
+.dark input:not([type='checkbox']):not([type='radio']),
+.dark textarea,
+.dark select {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f4f4f5 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(244, 244, 245, 0.45) !important;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: 'PP Mori', 'Plus Jakarta Sans', sans-serif;
-  overflow-x: hidden;
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+  font-weight: 400;
+  /* `clip` (not `hidden`) prevents horizontal overflow without turning <body> into a
+     scroll container — `hidden` here silently breaks every `position: sticky` descendant. */
+  overflow-x: clip;
   margin: 0;
   padding: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Brockmann', 'Outfit', sans-serif;
-  font-weight: 400;
+  font-family: var(--font-heading), system-ui, -apple-system, sans-serif;
+  /* Real weight, not synthesised — this is the hierarchy the old stack couldn't do. */
+  font-weight: 650;
+  letter-spacing: -0.015em;
 }
 
 /* Custom Scrollbar */
@@ -113,7 +263,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .font-editorial {
-  font-family: 'Brockmann', 'Outfit', sans-serif;
+  font-family: var(--font-heading), system-ui, -apple-system, sans-serif;
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
@@ -124,26 +275,24 @@ h1, h2, h3, h4, h5, h6 {
   --border: rgba(255, 255, 255, 0.08);
 }
 
+/* Transparent so the fixed aurora backdrop shows through. A solid body colour
+   here would paint over it and every glass surface would go back to looking
+   like a flat dark card. */
 .dark body {
-  background-color: #09090b !important;
+  background-color: transparent !important;
   color: #f4f4f5 !important;
 }
 
-/* Background overrides */
-.dark .bg-white {
-  background-color: #121214 !important;
-}
+/* Background overrides.
+   .bg-white / .bg-zinc-50 / .bg-zinc-100 are handled by the liquid-glass rule
+   near the top of this file — they must NOT be re-flattened here. */
 .dark .bg-\[\#f0f4f7\] {
-  background-color: #1c1c1f !important;
-}
-.dark .bg-zinc-50 {
-  background-color: #121214 !important;
-}
-.dark .bg-zinc-100 {
-  background-color: #1c1c1f !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(22px) saturate(170%) brightness(0.6);
+  -webkit-backdrop-filter: blur(22px) saturate(170%) brightness(0.6);
 }
 .dark .bg-zinc-200 {
-  background-color: #27272a !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 /* Hardcoded main brand dark color */
@@ -255,8 +404,12 @@ h1, h2, h3, h4, h5, h6 {
 .dark .hover\:text-black:hover {
   color: #ffffff !important;
 }
+/* Scrolled navbar — glass rather than a near-opaque bar. */
 .dark .bg-white\/95 {
-  background-color: rgba(18, 18, 20, 0.95) !important;
+  background-color: rgba(18, 20, 24, 0.22) !important;
+  backdrop-filter: blur(30px) saturate(180%) brightness(0.55);
+  -webkit-backdrop-filter: blur(30px) saturate(180%) brightness(0.55);
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 .dark .shadow-sm {
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5) !important;
@@ -297,8 +450,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Additional Dark Mode Fixes */
+/* Dashboard shell — transparent so the aurora reaches the app surfaces too,
+   not just the marketing pages. */
 .dark .bg-\[\#f8fafc\] {
-  background-color: #09090b !important;
+  background-color: transparent !important;
 }
 .dark .text-zinc-800 {
   color: #e4e4e7 !important;
@@ -362,14 +517,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Final CTA Section Dark Mode */
 .dark .final-cta {
-  background-color: #0d2227 !important;
+  /* Jet black, not the old #0d2227 teal. This carries !important, which beats
+     an inline style on the section — so the colour has to change here, not in
+     the component, or the JSX would silently lose. */
+  background-color: #000000 !important;
   border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 .dark .final-cta h2 {
   color: #ffffff !important;
 }
 .dark .final-cta p {
-  color: rgba(255, 255, 255, 0.7) !important;
+  /* Lifted from 0.7 — on pure black the old value sat near 8:1, and the
+     supporting line deserves better than the bare minimum. */
+  color: rgba(255, 255, 255, 0.82) !important;
 }
 .dark .final-cta .bg-white\/80 {
   background-color: rgba(255, 255, 255, 0.08) !important;
@@ -403,5 +563,295 @@ h1, h2, h3, h4, h5, h6 {
   color: rgba(255, 255, 255, 0.82) !important;
 }
 
+/* Mercury-style card: permanently dark, independent of the site light/dark toggle */
+.mercury-card {
+  --mc-bg: #0d0d0f;
+  --mc-border: rgba(255, 255, 255, 0.08);
+  --mc-text: #f4f4f5;
+  --mc-text-muted: rgba(244, 244, 245, 0.55);
+  --mc-row-hover: rgba(255, 255, 255, 0.05);
+  --status-sent: #3b82f6;
+  --status-overdue: #ef4444;
+  --status-paid: #22c55e;
+}
 
 
+
+
+/* ==========================================================================
+   Dashboard theme — cream canvas, floating charcoal rail, pastel stat cards.
+
+   Scoped under `.zarss` rather than applied globally: the marketing site keeps
+   its dark/glass treatment, and the `.dark .bg-white → liquid glass` rule from
+   earlier would otherwise turn every card here into a translucent slab. The
+   `!important`s exist purely to outrank that rule inside this scope.
+   ========================================================================== */
+.zarss {
+  --z-canvas: #f1ede4;   /* page */
+  --z-surface: #ffffff;  /* cards */
+  --z-rail: #232323;     /* sidebar */
+  --z-ink: #1c1c1c;
+  --z-ink-soft: #7b776f;
+  --z-line: rgba(28, 28, 28, 0.08);
+
+  /* Stat-card pastels, straight off the reference. */
+  --z-sage: #cddcc0;
+  --z-amber: #f5d372;
+  --z-iris: #b3aef5;
+
+  --z-radius: 22px;
+
+  background-color: var(--z-canvas) !important;
+  color: var(--z-ink);
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+/* Neutralise the sitewide glass treatment inside the dashboard. */
+.zarss .bg-white,
+.zarss .bg-zinc-50,
+.zarss .bg-zinc-100 {
+  background-color: var(--z-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-color: var(--z-line) !important;
+  box-shadow: 0 1px 2px rgba(28, 28, 28, 0.04) !important;
+}
+
+.zarss h1, .zarss h2, .zarss h3, .zarss h4 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--z-ink);
+}
+
+/* Generous radii are most of what makes the reference read as "soft". */
+.zarss .rounded-2xl { border-radius: var(--z-radius) !important; }
+.zarss .rounded-xl  { border-radius: 16px !important; }
+
+/* Numerals: tabular so columns line up, and heavy enough to carry the layout. */
+.zarss .z-figure {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.zarss .z-label {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--z-ink);
+}
+.zarss .z-muted { color: var(--z-ink-soft); }
+
+/* Pastel stat cards — flat fills, no border, no glass. */
+.zarss .z-stat {
+  border-radius: var(--z-radius);
+  border: none !important;
+  box-shadow: none !important;
+  padding: 20px;
+  color: var(--z-ink);
+}
+.zarss .z-stat-sage  { background: var(--z-sage) !important; }
+.zarss .z-stat-amber { background: var(--z-amber) !important; }
+.zarss .z-stat-iris  { background: var(--z-iris) !important; }
+
+/* Delta pill in the corner of each stat card. */
+.zarss .z-delta {
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--z-ink);
+}
+
+/* Floating charcoal sidebar. */
+.zarss .z-rail {
+  background: var(--z-rail) !important;
+  border: none !important;
+  border-radius: var(--z-radius);
+  color: #efece6;
+}
+.zarss .z-rail a,
+.zarss .z-rail button { color: rgba(255, 255, 255, 0.9); }
+.zarss .z-rail a:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.zarss .z-rail a[data-active='true'] {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* The dark-mode overrides above flip every `.text-[#0d2227]` to a light colour,
+   which is right for the marketing site but inverts every heading on the cream
+   dashboard. Re-assert ink inside the scope. `.dark .zarss` matches the same
+   two-class specificity and wins on source order. */
+.dark .zarss h1,
+.dark .zarss h2,
+.dark .zarss h3,
+.dark .zarss h4,
+.dark .zarss .text-\[\#0d2227\] {
+  color: var(--z-ink) !important;
+  -webkit-text-fill-color: var(--z-ink);
+}
+.dark .zarss .text-\[\#0d2227\]\/85,
+.dark .zarss .text-\[\#0d2227\]\/80,
+.dark .zarss .text-\[\#0d2227\]\/70,
+.dark .zarss .text-\[\#0d2227\]\/60,
+.dark .zarss .text-\[\#0d2227\]\/50,
+.dark .zarss .text-\[\#0d2227\]\/40,
+.dark .zarss .text-zinc-500,
+.dark .zarss .text-zinc-600,
+.dark .zarss .text-zinc-700 {
+  color: var(--z-ink-soft) !important;
+  -webkit-text-fill-color: var(--z-ink-soft);
+}
+/* The rail is charcoal, so ink there would be invisible — light wins back. */
+.dark .zarss .z-rail,
+.dark .zarss .z-rail * {
+  -webkit-text-fill-color: currentColor;
+}
+.dark .zarss .z-rail .text-white { color: #fff !important; }
+
+/* Headers that sit directly on the canvas rather than on a white card.
+   White text is the ask, but white on the cream canvas is invisible - so the
+   block carries its own dark translucent band. The video still reads through
+   it, and the text has a guaranteed backdrop instead of depending on which
+   frame happens to be playing. */
+.dark .zarss .z-on-canvas {
+  background: rgba(24, 23, 20, 0.62);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  padding: 16px 20px;
+}
+.dark .zarss .z-on-canvas h1,
+.dark .zarss .z-on-canvas h2,
+.dark .zarss .z-on-canvas h3 {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+.dark .zarss .z-on-canvas p,
+.dark .zarss .z-on-canvas .text-zinc-500,
+.dark .zarss .z-on-canvas .text-zinc-600 {
+  color: rgba(255, 255, 255, 0.82) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.82);
+  font-weight: 500;
+}
+
+/* Smooth anchor jumps, so nav links glide instead of teleporting — the
+   scroll-linked 3D reveals only read as depth if the scroll itself is smooth.
+   Suppressed for users who ask for reduced motion. */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+
+/* The rail sits on a dark photo, so every label in it must stay light. The
+   `.zarss .text-[#0d2227]` rule above forces ink with !important — correct for
+   the cream content area, catastrophic inside the charcoal sidebar, where it
+   rendered the active nav item at 1.19:1. Scope it back out here. */
+.dark .zarss .z-rail a,
+.dark .zarss .z-rail button,
+.dark .zarss .z-rail span,
+.dark .zarss .z-rail div {
+  -webkit-text-fill-color: currentColor;
+}
+.dark .zarss .z-rail .text-\[\#0d2227\] {
+  color: rgba(255, 255, 255, 0.9) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
+}
+/* Active item: white on a fill solid enough to read over the photo. */
+.dark .zarss .z-rail a[data-active='true'] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  background: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* ---- Dashboard zinc-text repair --------------------------------------------
+   The dashboard is a light (cream/white) theme living inside `html.dark`, so
+   the `.dark .text-zinc-*` overrides — written for the dark landing site — leak
+   in and lighten text that sits on white cards. On the Setup page this rendered
+   the integration "type" label as white-on-white (1.0:1, invisible).
+
+   Re-assert readable dark values, scoped to the dashboard. The rail styles its
+   own text later in this file and isn't affected (it uses white/opacity classes,
+   not zinc utilities). */
+.dark .zarss .text-zinc-400 { color: #6b675f !important; -webkit-text-fill-color: #6b675f; }
+.dark .zarss .text-zinc-500 { color: #605c55 !important; -webkit-text-fill-color: #605c55; }
+.dark .zarss .text-zinc-600 { color: #4a463f !important; -webkit-text-fill-color: #4a463f; }
+.dark .zarss .text-zinc-700 { color: #35322c !important; -webkit-text-fill-color: #35322c; }
+.dark .zarss .text-zinc-800 { color: #232323 !important; -webkit-text-fill-color: #232323; }
+
+/* Dashboard form fields: dark text on a light field. The generic `.dark input`
+   rule makes them light-on-translucent, correct for the dark site but wrong on
+   the dashboard's white cards, where it turned typed text invisible (the AI CFO
+   ask box). */
+.dark .zarss input:not([type='checkbox']):not([type='radio']),
+.dark .zarss textarea,
+.dark .zarss select {
+  background-color: #ffffff !important;
+  color: #1c1c1c !important;
+  -webkit-text-fill-color: #1c1c1c;
+  border-color: rgba(28, 28, 28, 0.18) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.dark .zarss input::placeholder,
+.dark .zarss textarea::placeholder {
+  color: rgba(28, 28, 28, 0.42) !important;
+  -webkit-text-fill-color: rgba(28, 28, 28, 0.42);
+}
+
+/* Testimonial marquee. Two directions; the track holds the list twice, so a
+   -50% translate lands on an identical frame and loops seamlessly. Hover pauses
+   so a quote can actually be read; reduced-motion stops it entirely. */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.marquee-row:hover > div { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-row > div { animation: none !important; transform: none !important; }
+  .marquee-row { overflow-x: auto; }
+}
+
+
+/* Rail labels sit on the frosted video now, not a flat charcoal panel, so the
+   faint helper text (section captions, the v2.0 chip, the user's role) needs a
+   floor. Brought up from ~35% to a readable weight. */
+.dark .zarss .z-rail .text-white\/35 { color: rgba(255,255,255,0.72) !important; }
+.dark .zarss .z-rail .text-white\/45 { color: rgba(255,255,255,0.78) !important; }
+/* Every nav item gets a subtle glass chip so its label never sits directly on a
+   bright video highlight — the "liquid glass" the rail was missing. */
+.dark .zarss .z-rail nav a {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.dark .zarss .z-rail nav a:hover { background: rgba(255, 255, 255, 0.13) !important; }
+.dark .zarss .z-rail nav a[data-active='true'] {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+/* KPI detail popover entrance. */
+@keyframes kpiIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Platform-tour annotation idle float. Driven by CSS (not framer-motion) so the
+   card's AnimatePresence exit can complete — an infinite framer animation on the
+   exiting subtree blocks onExitComplete and freezes the sequence. */
+@keyframes annFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}

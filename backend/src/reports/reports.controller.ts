@@ -1,17 +1,18 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { ReportsService } from './reports.service';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
-  @Get('aging/:orgId')
-  async getAging(@Param('orgId') orgId: string) {
+  @Get('aging')
+  async getAging(@CurrentUser('orgId') orgId: string) {
     return this.reportsService.generateAgingReport(orgId);
   }
 
-  @Post('executive/:orgId')
-  async generateExecutive(@Param('orgId') orgId: string) {
+  @Post('executive')
+  async generateExecutive(@CurrentUser('orgId') orgId: string) {
     return this.reportsService.generateExecutiveWeeklySummary(orgId);
   }
 }
