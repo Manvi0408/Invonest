@@ -105,11 +105,11 @@ A production-grade integrations platform — OAuth 2.0 (with automatic token ref
 
 ## 📸 Screenshots
 
-> Drop your captures into `docs/screenshots/` and they'll render here.
-
 | Landing | Dashboard | Integrations |
 |---|---|---|
-| `docs/screenshots/landing.png` | `docs/screenshots/dashboard.png` | `docs/screenshots/integrations.png` |
+| ![Landing](docs/screenshots/landing-final.png) | ![Dashboard](docs/screenshots/dash-overview.png) | ![Integrations](docs/screenshots/integrations-3d.png) |
+
+> All UI captures live in [`docs/screenshots/`](docs/screenshots).
 
 ---
 
