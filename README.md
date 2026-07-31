@@ -155,6 +155,97 @@ A production-grade integrations platform — OAuth 2.0 (with automatic token ref
 
 ---
 
+## 💳 Pricing
+
+Start free, upgrade when your ledger grows. No card required for the Starter plan.
+
+| | **Starter** | **Growth** ⭐ | **Enterprise** |
+|---|:---:|:---:|:---:|
+| **Price** | **₹0** /mo | **₹12,999** /mo | **Custom** |
+| **Best for** | Startups & small teams | High-throughput SaaS | Large finance divisions |
+| Active client ledgers | Up to 50 | **Unlimited** | **Unlimited** |
+| Invoice OCR (97% accuracy) | ✅ | ✅ | ✅ |
+| Integrations (QuickBooks, Xero, Stripe, Razorpay, Gmail…) | ✅ | ✅ | ✅ |
+| Automated email reminders | ✅ | ✅ | ✅ |
+| AI CFO Copilot chat | — | ✅ | ✅ |
+| 30-60-90 day cash-flow forecasting | — | ✅ | ✅ |
+| Visual reminder workflows (email → WhatsApp) | — | ✅ | ✅ |
+| Risk engine & client health scores | Basic | Full | Full |
+| Dedicated database cluster isolation | — | — | ✅ |
+| Custom Financial Digital Twin API | — | — | ✅ |
+| SLA support agreement | — | — | ✅ |
+| | [Start free](https://github.com/Manvi0408/Invonest) | [Get Growth](https://github.com/Manvi0408/Invonest) | [Contact sales](https://github.com/Manvi0408/Invonest) |
+
+> ⭐ **Growth** is the most popular plan — unlimited clients, the AI CFO Copilot, forecasting, and the full escalation workflow builder.
+
+## 🗺️ Schema Map
+
+```mermaid
+flowchart LR
+  subgraph ID["🔐 Identity & Tenancy"]
+    ORG["Organization<br/>plan · slug"]
+    USR["User<br/>email · name"]
+    MEM["Membership<br/>role"]
+  end
+
+  subgraph AR["🧾 Accounts Receivable"]
+    CLI["Client<br/>outstandingBalance"]
+    CRP["ClientRiskProfile<br/>riskLevel · reliability"]
+    INV["Invoice<br/>amount · status · dueDate"]
+    ITM["InvoiceItem<br/>qty · unitPrice"]
+    PAY["Payment<br/>amount · method"]
+    RSK["RiskPrediction<br/>score · d7/d14/d30 curve"]
+    REM["Reminder<br/>channel · scheduledFor"]
+  end
+
+  subgraph INT["🔌 Integrations Platform"]
+    ITG["Integration<br/>provider · status"]
+    TOK["OAuthToken<br/>AES-256-GCM · expiresAt"]
+    JOB["SyncJob<br/>kind · recordsSynced"]
+    WHK["WebhookEvent<br/>externalId · verified"]
+  end
+
+  subgraph SYN["🔄 Synced Provider Data"]
+    SC["SyncedCustomer"]
+    SI["SyncedInvoice"]
+    SP["SyncedPayment"]
+    CNV["Conversation<br/>email · WhatsApp"]
+  end
+
+  ORG --> MEM
+  USR --> MEM
+  ORG --> CLI
+  ORG --> INV
+  ORG --> ITG
+  CLI --> CRP
+  CLI --> INV
+  INV --> ITM
+  INV --> PAY
+  INV --> RSK
+  INV --> REM
+  ITG --> TOK
+  ITG --> JOB
+  ITG -.->|"provider events"| WHK
+  JOB --> SC
+  JOB --> SI
+  JOB --> SP
+  JOB --> CNV
+
+  classDef id  fill:#1E88E5,stroke:#0d5aa7,color:#ffffff;
+  classDef ar  fill:#2CA01C,stroke:#1c6d13,color:#ffffff;
+  classDef int fill:#635BFF,stroke:#3f39b8,color:#ffffff;
+  classDef syn fill:#0E9488,stroke:#0a6e64,color:#ffffff;
+
+  class ORG,USR,MEM id;
+  class CLI,CRP,INV,ITM,PAY,RSK,REM ar;
+  class ITG,TOK,JOB,WHK int;
+  class SC,SI,SP,CNV syn;
+```
+
+Each colour is a bounded context: **blue** = identity & tenancy, **green** = the accounts-receivable core, **purple** = the integrations platform (OAuth, workers, webhooks), **teal** = the mirror tables the sync workers populate from external providers. Solid arrows are ownership/foreign-key relationships; the dashed arrow marks provider webhook events, which are keyed by provider rather than a hard FK.
+
+**Legend** — `PK` primary key · `FK` foreign key · `UK` unique · `||--o{` one-to-many · `||--o|` one-to-(zero/one) · `}o..o{` related by provider (no hard FK). Provider data pulled by the sync workers lands in mirror tables (`SyncedCustomer`, `SyncedInvoice`, `SyncedPayment`, `Conversation`), omitted here for clarity.
+
 ## 🛠️ Tech Stack
 
 **Frontend** · Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Framer Motion
@@ -195,26 +286,39 @@ Open **http://localhost:3000** — or jump straight into the demo workspace at *
 
 ---
 
-## 🗂️ Project Structure
+## 📁 Project Structure
 
+```text
+invonest/
+├── frontend/                 # Next.js 15 (Landing + Dashboard)
+│   ├── app/
+│   ├── components/
+│   ├── hooks/
+│   ├── lib/
+│   └── public/
+│
+├── backend/                  # NestJS API
+│   ├── auth/
+│   ├── ai-copilot/
+│   ├── clients/
+│   ├── invoices/
+│   ├── risk-engine/
+│   ├── forecasting/
+│   ├── integrations/
+│   │   ├── quickbooks/
+│   │   ├── xero/
+│   │   ├── zoho-books/
+│   │   ├── salesforce/
+│   │   ├── stripe/
+│   │   ├── razorpay/
+│   │   ├── gmail/
+│   │   └── whatsapp/
+│   └── prisma/
+│
+├── docs/                     # Documentation & Screenshots
+├── pg-server.js              # Local PostgreSQL server
+└── README.md
 ```
-innovest/
-├── frontend/            # Next.js 15 app (landing + dashboard)
-│   └── app/
-│       ├── page.tsx             # marketing landing
-│       ├── dashboard/           # the product (overview, clients, copilot, integrations…)
-│       └── components/          # shared UI (3D reveals, glass cards, catalog…)
-├── backend/             # NestJS API
-│   └── src/
-│       ├── integrations/        # OAuth, sync engine, webhooks, workers
-│       ├── ai-copilot/          # AI CFO Copilot
-│       ├── risk-engine/         # late-payment prediction
-│       ├── invoices/ clients/ forecasting/ …
-│       └── prisma/              # schema & seed
-└── pg-server.js         # local PGlite Postgres server
-```
-
----
 
 ## 🔒 Security
 
