@@ -286,40 +286,6 @@ Open **http://localhost:3000** — or jump straight into the demo workspace at *
 
 ---
 
-## 📁 Project Structure
-
-```text
-invonest/
-├── frontend/                 # Next.js 15 (Landing + Dashboard)
-│   ├── app/
-│   ├── components/
-│   ├── hooks/
-│   ├── lib/
-│   └── public/
-│
-├── backend/                  # NestJS API
-│   ├── auth/
-│   ├── ai-copilot/
-│   ├── clients/
-│   ├── invoices/
-│   ├── risk-engine/
-│   ├── forecasting/
-│   ├── integrations/
-│   │   ├── quickbooks/
-│   │   ├── xero/
-│   │   ├── zoho-books/
-│   │   ├── salesforce/
-│   │   ├── stripe/
-│   │   ├── razorpay/
-│   │   ├── gmail/
-│   │   └── whatsapp/
-│   └── prisma/
-│
-├── docs/                     # Documentation & Screenshots
-├── pg-server.js              # Local PostgreSQL server
-└── README.md
-```
-
 ## 🔒 Security
 
 - Secrets live only in gitignored `.env` files — never committed.
