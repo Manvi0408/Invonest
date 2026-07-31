@@ -119,15 +119,6 @@ A production-grade integrations platform — OAuth 2.0 (with automatic token ref
 **AI** · Google Gemini (AI CFO Copilot) · **Email** · Resend
 **Architecture** · Clean, modular services · JWT auth (deny-by-default) · rate-limited, structured logging · production-ready OAuth/webhook flows
 
----
-
-## 📸 Screenshots
-
-| Landing | Dashboard | Integrations |
-|---|---|---|
-| ![Landing](docs/screenshots/landing-final.png) | ![Dashboard](docs/screenshots/dash-overview.png) | ![Integrations](docs/screenshots/integrations-3d.png) |
-
-> All UI captures live in [`docs/screenshots/`](docs/screenshots).
 
 ---
 
