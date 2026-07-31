@@ -1,6 +1,10 @@
 <div align="center">
 
 # 💸 InvoNest
+<!-- Animated typing headline (live/animated) -->
+<a href="https://github.com/Manvi0408/Invonest">
+  <img src="https://readme-typing-svg.demolab.com?font=Poppins&weight=600&size=30&duration=2800&pause=800&color=2CA01C&center=true&vCenter=true&width=820&height=60&lines=InvoNest+%E2%80%94+AI+Cash-Flow+Intelligence;Predict+who+pays+late.;Chase+invoices+automatically.;Always+know+your+runway." alt="InvoNest" />
+</a>
 
 ### AI Cash-Flow Intelligence & Invoice Recovery for modern finance teams
 
@@ -24,8 +28,47 @@
 InvoNest is an **AI-powered accounts-receivable platform**. It connects to your accounting, CRM, payment and communication tools, learns how each customer pays, and then does the boring, high-stakes work for you: **flagging invoices that are about to go late, running the follow-up sequence, embedding a payment link in every message, and forecasting your cash runway in real time.**
 
 Think of it as an autopilot for collections plus a CFO co-pilot that actually reads your ledger.
+## Architecture
+
+```mermaid
+flowchart LR
+  U["Finance team"] --> FE["Next.js frontend<br/>landing + dashboard"]
+  FE -->|"REST /api (JWT)"| API["NestJS API<br/>deny-by-default auth · rate limited"]
+
+  subgraph CORE["Core services"]
+    direction TB
+    OCR["Invoice OCR<br/>PDF → structured data"]
+    RISK["Risk engine<br/>late-payment prediction"]
+    FC["Forecasting<br/>cash runway"]
+    CP["AI CFO Copilot"]
+    REM["Reminder engine<br/>email → WhatsApp escalation"]
+  end
+
+  subgraph INT["Integrations platform"]
+    direction TB
+    OAUTH["OAuth 2.0 + auto token refresh<br/>AES-256-GCM encrypted at rest"]
+    SYNC["Sync workers<br/>BullMQ / timer fallback"]
+    WH["Webhooks<br/>HMAC-verified · idempotent"]
+  end
+
+  API --> CORE
+  API --> INT
+
+  CP -->|"prompt + live ledger"| GEM[("Google Gemini")]
+  REM -->|"deliver"| RES[("Resend email")]
+  INT <-->|"OAuth / API keys"| PROV["QuickBooks · Xero · Zoho Books<br/>Salesforce · Stripe · Razorpay<br/>Gmail · WhatsApp"]
+
+  API --> DB[("PostgreSQL / Supabase<br/>via Prisma")]
+  CORE --> DB
+  SYNC --> DB
+```
+
+The frontend is a Next.js 15 App Router site (marketing landing + the product dashboard) that talks to a NestJS API over REST, with every route authenticated by default. The API is split into focused services — **Invoice OCR**, a **Risk engine** that predicts late payments from historical behaviour, **cash-flow forecasting**, an **AI CFO Copilot** grounded in the live ledger (report-first, so it never invents numbers), and a **reminder engine** that escalates email → WhatsApp with an embedded payment link. A dedicated **integrations platform** connects the eight supported providers via OAuth 2.0 (tokens encrypted at rest and refreshed automatically) or API keys, runs background sync workers (BullMQ, with a timer fallback when Redis isn't present), and ingests signature-verified, de-duplicated webhooks. Everything persists to PostgreSQL (Supabase in production, PGlite for local dev) through Prisma.
 
 ---
+
+<div align="center">
+
 
 ## 🔥 The Problem
 
