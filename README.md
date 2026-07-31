@@ -295,6 +295,14 @@ Open **http://localhost:3000** — or jump straight into the demo workspace at *
 
 ---
 
+## 📄 License
+
+Released under the **MIT License** — see [`LICENSE`](LICENSE) for details.
+
+![License: MIT](https://img.shields.io/badge/License-MIT-2CA01C?style=for-the-badge&labelColor=0d1117)
+
+---
+
 <div align="center">
 
 **InvoNest** — stop chasing payments, start predicting cash flow.
