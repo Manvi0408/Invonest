@@ -48,7 +48,25 @@ InvoNest turns accounts receivable from a spreadsheet chore into an intelligent,
 | Digging through spreadsheets | An **AI CFO Copilot** you can ask in plain English |
 | Copy-pasting invoices | **OCR extraction** — drop a PDF, get structured data |
 
----
+<h2 align="center">✨ Product Showcase</h2>
+
+<p align="center">
+  <b>AI-powered finance platform built for modern businesses.</b>
+</p>
+
+<br>
+
+<p align="center">
+  <img src="./docs/screenshots/dashboardd.png" alt="Dashboard" width="30%">
+  <img src="./docs/screenshots/loginn.png" alt="Login" width="30%">
+  <img src="./docs/screenshots/platform in action.png" alt="Platform in Action" width="30%">
+</p>
+
+<p align="center">
+  <img src="./docs/screenshots/overview.png" alt="Overview" width="30%">
+  <img src="./docs/screenshots/clients.png" alt="Clients" width="30%">
+  <img src="./docs/screenshots/ai cop.png" alt="AI Copilot" width="30%">
+</p>
 
 ## 🚀 Why startups love it
 
